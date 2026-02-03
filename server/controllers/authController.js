@@ -54,8 +54,7 @@ export const registerUser = async (req, res) => {
     console.error('Register User Error:', error);
     res.status(500).json({
       success: false,
-      message: 'Error registering user',
-      error: error.message
+      message: error.message || 'Error registering user'
     });
   }
 };
@@ -95,21 +94,21 @@ export const registerClient = async (req, res) => {
       name,
       email,
       password,
-      phone,
+      phone: phone || '',
       role: 'client',
       company: {
-        name: companyName,
-        industry: companyIndustry,
-        size: companySize,
+        name: companyName || `${name}'s Company`,
+        industry: companyIndustry || 'Other',
+        size: companySize || '1-10',
         location: {
-          city: companyCity,
-          country: companyCountry
+          city: companyCity || '',
+          country: companyCountry || ''
         }
       },
       contactPerson: {
-        name: contactPersonName,
-        email: contactPersonEmail,
-        phone
+        name: contactPersonName || name,
+        email: contactPersonEmail || email,
+        phone: phone || ''
       },
       emailVerificationToken: generateVerificationToken()
     });
@@ -136,8 +135,7 @@ export const registerClient = async (req, res) => {
     console.error('Register Client Error:', error);
     res.status(500).json({
       success: false,
-      message: 'Error registering client',
-      error: error.message
+      message: error.message || 'Error registering client'
     });
   }
 };
@@ -161,11 +159,19 @@ export const login = async (req, res) => {
 
     // Find user based on role
     let account;
-    if (role === 'user' || !role) {
+    // 1. Try to find in specified model first
+    if (role === 'user') {
       account = await User.findOne({ email }).select('+password');
-    }
-    if (!account && (role === 'client' || !role)) {
+    } else if (role === 'client') {
       account = await Client.findOne({ email }).select('+password');
+    }
+
+    // 2. If not found or role was not specified, search BOTH models
+    if (!account) {
+      account = await User.findOne({ email }).select('+password');
+      if (!account) {
+        account = await Client.findOne({ email }).select('+password');
+      }
     }
 
     if (!account) {
@@ -173,6 +179,14 @@ export const login = async (req, res) => {
         success: false,
         message: 'Invalid credentials'
       });
+    }
+
+    // Ensure role is present (fixes issues with legacy data)
+    if (!account.role) {
+      // Determine role based on which model the account belongs to
+      const isUser = account.constructor.modelName === 'User';
+      account.role = isUser ? 'user' : 'client';
+      await account.save();
     }
 
     // Check if account is active

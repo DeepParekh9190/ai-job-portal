@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useForm } from 'react-hook-form';
 import { User, Mail, Phone, MapPin, Briefcase, Camera, Save, ArrowLeft } from 'lucide-react';
@@ -16,16 +16,34 @@ const Profile = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [avatarPreview, setAvatarPreview] = useState(null);
 
-  const { register, handleSubmit, formState: { errors } } = useForm({
+  const { register, handleSubmit, reset, formState: { errors } } = useForm({
     defaultValues: {
       name: user?.name || '',
       email: user?.email || '',
       phone: user?.phone || '',
-      location: user?.location || 'San Francisco, CA',
-      title: user?.professional?.title || 'Software Engineer',
-      bio: user?.bio || 'Passionate developer with experience in building scalable web applications.'
+      location: user?.location || 'Bengaluru, KA',
+      title: user?.professional?.title || user?.title || '',
+      bio: user?.bio || ''
     }
   });
+
+  // Sync form with user state when it updates
+  useEffect(() => {
+    if (user) {
+      reset({
+        name: user.name || '',
+        email: user.email || '',
+        phone: user.phone || '',
+        location: user.location || 'Bengaluru, KA',
+        title: user.professional?.title || user.title || '',
+        bio: user.bio || '',
+        company: user.professional?.company || '',
+        website: user.professional?.website || '',
+        linkedin: user.professional?.linkedin || '',
+        github: user.professional?.github || ''
+      });
+    }
+  }, [user, reset]);
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
@@ -42,9 +60,9 @@ const Profile = () => {
     try {
       await dispatch(updateProfile(data)).unwrap();
       setIsEditing(false);
-      toast.success('Profile updated successfully!');
     } catch (err) {
-      toast.error(err || 'Failed to update profile');
+      // Error is already handled by Redux thunk
+      console.error('Update Profile Error:', err);
     }
   };
 
@@ -107,7 +125,7 @@ const Profile = () => {
                   </div>
                   <div className="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/5">
                     <MapPin size={16} className="text-gray-500 shrink-0" />
-                    <span>{user?.location || 'San Francisco, CA'}</span>
+                    <span>{user?.location || 'Bengaluru, KA'}</span>
                   </div>
                 </div>
               </Card>
@@ -192,21 +210,25 @@ const Profile = () => {
                       label="Current Company"
                       placeholder="e.g. Google"
                       disabled={!isEditing}
+                      {...register('company')}
                    />
                    <Input
                       label="Website / Portfolio"
                       placeholder="https://..."
                       disabled={!isEditing}
+                      {...register('website')}
                    />
                    <Input
                       label="LinkedIn URL"
                       placeholder="https://linkedin.com/in/..."
                       disabled={!isEditing}
+                      {...register('linkedin')}
                    />
                    <Input
                       label="GitHub URL"
                       placeholder="https://github.com/..."
                       disabled={!isEditing}
+                      {...register('github')}
                    />
                 </div>
               </Card>

@@ -5,6 +5,7 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import compression from 'compression';
 import connectDB from './config/db.js';
+import mongoose from 'mongoose';
 
 // Import routes
 import authRoutes from './routes/authRoutes.js';
@@ -62,9 +63,14 @@ app.use((req, res, next) => {
 
 // Health check
 app.get('/health', (req, res) => {
+  const dbStatus = mongoose.connection.readyState === 1 ? 'connected' : 'disconnected';
+  const dbName = mongoose.connection.name;
+  
   res.status(200).json({
     success: true,
     message: 'Server is running',
+    dbStatus,
+    dbName,
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV
   });

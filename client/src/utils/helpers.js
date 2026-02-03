@@ -27,8 +27,8 @@ export const getRelativeTime = (date) => {
 /**
  * Format salary range
  */
-export const formatSalary = (min, max, currency = 'USD') => {
-  const formatter = new Intl.NumberFormat('en-US', {
+export const formatSalary = (min, max, currency = 'INR') => {
+  const formatter = new Intl.NumberFormat('en-IN', {
     style: 'currency',
     currency,
     minimumFractionDigits: 0,
@@ -49,7 +49,7 @@ export const formatSalary = (min, max, currency = 'USD') => {
  */
 export const formatNumber = (num) => {
   if (!num) return '0';
-  return new Intl.NumberFormat('en-US').format(num);
+  return new Intl.NumberFormat('en-IN').format(num);
 };
 
 /**

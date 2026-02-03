@@ -29,14 +29,14 @@ const clientSchema = new mongoose.Schema({
   },
   phone: {
     type: String,
-    required: [true, 'Please provide phone number'],
     trim: true
   },
   
   // Role Management
   role: {
     type: String,
-    enum: ['client'],
+    enum: ['user', 'client', 'admin'],
+    required: [true, 'Role is required'],
     default: 'client'
   },
   
@@ -44,7 +44,6 @@ const clientSchema = new mongoose.Schema({
   company: {
     name: {
       type: String,
-      required: [true, 'Please provide company name'],
       trim: true
     },
     logo: {
@@ -75,13 +74,11 @@ const clientSchema = new mongoose.Schema({
         'Marketing',
         'Consulting',
         'Other'
-      ],
-      required: [true, 'Please select an industry']
+      ]
     },
     size: {
       type: String,
-      enum: ['1-10', '11-50', '51-200', '201-500', '501-1000', '1000+'],
-      required: [true, 'Please select company size']
+      enum: ['1-10', '11-50', '51-200', '201-500', '501-1000', '1000+']
     },
     founded: {
       type: Number,
@@ -91,13 +88,11 @@ const clientSchema = new mongoose.Schema({
     location: {
       address: String,
       city: {
-        type: String,
-        required: [true, 'Please provide city']
+        type: String
       },
       state: String,
       country: {
-        type: String,
-        required: [true, 'Please provide country']
+        type: String
       },
       zipCode: String
     }
@@ -106,13 +101,11 @@ const clientSchema = new mongoose.Schema({
   // Contact Information
   contactPerson: {
     name: {
-      type: String,
-      required: [true, 'Please provide contact person name']
+      type: String
     },
     designation: String,
     email: {
-      type: String,
-      required: [true, 'Please provide contact email']
+      type: String
     },
     phone: String
   },

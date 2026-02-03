@@ -3,20 +3,27 @@ import { useForm } from 'react-hook-form';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom';
 import { login, clearError } from '../../redux/slices/authSlice';
-import { Mail, Lock, ArrowRight, Loader } from 'lucide-react';
+import { Mail, Lock, ArrowRight, Loader, Eye, EyeOff, User, Briefcase } from 'lucide-react';
 import gsap from 'gsap';
 
 const Login = () => {
-  const { register, handleSubmit, formState: { errors } } = useForm();
+  const { register, handleSubmit, watch, formState: { errors } } = useForm({
+    defaultValues: {
+      role: 'user'
+    }
+  });
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { loading, error, isAuthenticated, user } = useSelector((state) => state.auth);
   const formRef = useRef(null);
+  const [showPassword, setShowPassword] = useState(false);
+  const selectedRole = watch('role');
 
   useEffect(() => {
     // Redirect if already logged in
     if (isAuthenticated && user) {
-      const redirectPath = user.role === 'admin' ? '/admin/dashboard' : `/${user.role}/dashboard`;
+      const role = user.role || 'user';
+      const redirectPath = role === 'admin' ? '/admin/dashboard' : `/${role}/dashboard`;
       navigate(redirectPath);
     }
 
@@ -37,7 +44,7 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-[calc(100vh-80px)] flex items-center justify-center p-4 relative overflow-hidden">
+    <div className="min-h-[calc(100vh-80px)] flex items-center justify-center p-4 relative overflow-hidden py-12">
       {/* Background Decor */}
       <div className="absolute top-0 left-1/4 w-96 h-96 bg-electric-purple/20 rounded-full blur-[100px] -z-10 animate-pulse-slow"></div>
       <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-gold/10 rounded-full blur-[100px] -z-10 animate-pulse-slow" style={{ animationDelay: '1s' }}></div>
@@ -55,6 +62,36 @@ const Login = () => {
         )}
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          
+          {/* Role Selection */}
+          <div className="grid grid-cols-2 gap-4 mb-2">
+            <label className={`cursor-pointer rounded-xl p-3 border transition-all ${selectedRole === 'user' ? 'bg-electric-purple/20 border-electric-purple' : 'bg-white/5 border-white/10 hover:bg-white/10'}`}>
+              <input 
+                type="radio" 
+                value="user" 
+                {...register("role")} 
+                className="hidden" 
+              />
+              <div className="flex flex-col items-center gap-1 text-center">
+                <User className={`w-5 h-5 ${selectedRole === 'user' ? 'text-electric-purple' : 'text-gray-400'}`} />
+                <span className={`text-xs font-bold ${selectedRole === 'user' ? 'text-white' : 'text-gray-400'}`}>Candidate</span>
+              </div>
+            </label>
+
+            <label className={`cursor-pointer rounded-xl p-3 border transition-all ${selectedRole === 'client' ? 'bg-gold/20 border-gold' : 'bg-white/5 border-white/10 hover:bg-white/10'}`}>
+              <input 
+                type="radio" 
+                value="client" 
+                {...register("role")} 
+                className="hidden" 
+              />
+              <div className="flex flex-col items-center gap-1 text-center">
+                <Briefcase className={`w-5 h-5 ${selectedRole === 'client' ? 'text-gold' : 'text-gray-400'}`} />
+                <span className={`text-xs font-bold ${selectedRole === 'client' ? 'text-white' : 'text-gray-400'}`}>Employer</span>
+              </div>
+            </label>
+          </div>
+
           <div className="space-y-2">
             <label className="text-sm font-medium text-gray-300 ml-1">Email Address</label>
             <div className="relative group">
@@ -81,10 +118,18 @@ const Login = () => {
               <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 group-focus-within:text-electric-purple transition-colors" />
               <input
                 {...register("password", { required: "Password is required" })}
-                type="password"
+                type={showPassword ? "text" : "password"}
                 placeholder="••••••••"
-                className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-white placeholder:text-gray-600 focus:outline-none focus:border-electric-purple focus:ring-1 focus:ring-electric-purple transition-all"
+                className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-12 pr-12 text-white placeholder:text-gray-600 focus:outline-none focus:border-electric-purple focus:ring-1 focus:ring-electric-purple transition-all"
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white transition-colors"
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
             </div>
             {errors.password && <span className="text-xs text-red-400 ml-1">{errors.password.message}</span>}
           </div>
@@ -98,6 +143,7 @@ const Login = () => {
               Forgot Password?
             </Link>
           </div>
+
 
           <button 
             type="submit" 

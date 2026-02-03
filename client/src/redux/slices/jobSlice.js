@@ -178,6 +178,38 @@ export const getMyGigs = createAsyncThunk(
   }
 );
 
+// Update gig (client)
+export const updateGig = createAsyncThunk(
+  'job/updateGig',
+  async ({ id, gigData }, thunkAPI) => {
+    try {
+      const response = await gigService.updateGig(id, gigData);
+      toast.success('Gig updated successfully!');
+      return response;
+    } catch (error) {
+      const message = error.response?.data?.message || error.message;
+      toast.error(message);
+      return thunkAPI.rejectWithValue(message);
+    }
+  }
+);
+
+// Delete gig (client)
+export const deleteGig = createAsyncThunk(
+  'job/deleteGig',
+  async (id, thunkAPI) => {
+    try {
+      await gigService.deleteGig(id);
+      toast.success('Gig deleted successfully!');
+      return id;
+    } catch (error) {
+      const message = error.response?.data?.message || error.message;
+      toast.error(message);
+      return thunkAPI.rejectWithValue(message);
+    }
+  }
+);
+
 const jobSlice = createSlice({
   name: 'job',
   initialState,
@@ -322,6 +354,16 @@ const jobSlice = createSlice({
       .addCase(getMyGigs.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
+      })
+      // Update Gig
+      .addCase(updateGig.fulfilled, (state, action) => {
+        state.myGigs = state.myGigs.map((gig) =>
+          gig._id === action.payload.gig._id ? action.payload.gig : gig
+        );
+      })
+      // Delete Gig
+      .addCase(deleteGig.fulfilled, (state, action) => {
+        state.myGigs = state.myGigs.filter((gig) => gig._id !== action.payload);
       });
   },
 });

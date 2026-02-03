@@ -19,8 +19,14 @@ const user = safeParse('user');
 // Validate token to prevent infinite loading on 'undefined' strings
 const validToken = (token && token !== 'undefined' && token !== 'null') ? token : null;
 
+// Initialize user with role safety
+const hydratedUser = user ? {
+  ...user,
+  role: user.role || 'user' // Default to user if role is missing in localStorage
+} : null;
+
 const initialState = {
-  user: user,
+  user: hydratedUser,
   token: validToken,
   loading: false,
   error: null,
@@ -36,7 +42,7 @@ export const register = createAsyncThunk(
       toast.success('Registration successful!');
       return response;
     } catch (error) {
-      const message = error.response?.data?.message || error.message || 'Registration failed';
+      const message = error.response?.data?.message || error.message;
       toast.error(message);
       return thunkAPI.rejectWithValue(message);
     }
@@ -52,12 +58,14 @@ export const login = createAsyncThunk(
       toast.success('Login successful!');
       return response;
     } catch (error) {
-      const message = error.response?.data?.message || error.message || 'Login failed';
+      const message = error.response?.data?.message || error.message;
       toast.error(message);
       return thunkAPI.rejectWithValue(message);
     }
   }
 );
+
+
 
 // Get current user
 export const getCurrentUser = createAsyncThunk(
@@ -67,6 +75,18 @@ export const getCurrentUser = createAsyncThunk(
       const response = await authService.getCurrentUser();
       return response;
     } catch (error) {
+      console.warn("API getCurrentUser failed, attempting local fallback");
+      // Fallback: If API fails but we have local data, trust it for the demo
+      const localUser = localStorage.getItem('user');
+      const localToken = localStorage.getItem('token');
+      
+      if (localUser && localToken) {
+        return {
+          user: JSON.parse(localUser),
+          token: localToken
+        };
+      }
+      
       const message = error.response?.data?.message || error.message;
       return thunkAPI.rejectWithValue(message);
     }

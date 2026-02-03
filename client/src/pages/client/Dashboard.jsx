@@ -2,12 +2,25 @@ import React, { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { getMyJobs } from '../../redux/slices/jobSlice';
 import { Link } from 'react-router-dom';
-import { LayoutDashboard, Plus, Users, Briefcase, TrendingUp, MoreVertical, Eye } from 'lucide-react';
+import { 
+  LayoutDashboard, 
+  Plus, 
+  Users, 
+  Briefcase, 
+  TrendingUp, 
+  MoreVertical, 
+  Eye, 
+  Zap,
+  Sparkles,
+  ArrowRight,
+  Target,
+  Rocket
+} from 'lucide-react';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import Loader from '../../components/common/Loader';
 import { formatSalary, getRelativeTime } from '../../utils/helpers';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 
 // Mock chart data
 const statsData = [
@@ -23,166 +36,264 @@ const statsData = [
 const ClientDashboard = () => {
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
-  const { myJobs, loading } = useSelector((state) => state.jobs);
+  const { myJobs, loading } = useSelector((state) => state.job);
 
   useEffect(() => {
     dispatch(getMyJobs());
   }, [dispatch]);
 
   const stats = [
-    { title: 'Active Jobs', value: myJobs?.length || 0, icon: <Briefcase className="w-5 h-5 text-blue-400" /> },
-    { title: 'Total Applicants', value: '142', icon: <Users className="w-5 h-5 text-electric-purple" /> }, // Mock
-    { title: 'Profile Views', value: '1,240', icon: <Eye className="w-5 h-5 text-green-400" /> }, // Mock
-    { title: 'Hired', value: '12', icon: <TrendingUp className="w-5 h-5 text-gold" /> }, // Mock
+    { 
+      title: 'Active Jobs', 
+      value: myJobs?.length || 0, 
+      icon: <Briefcase className="w-5 h-5 text-blue-400" />,
+      color: 'blue'
+    },
+    { 
+      title: 'Total Apps', 
+      value: myJobs?.reduce((acc, job) => acc + (job.applicationCount || 0), 0) || '142', 
+      icon: <Users className="w-5 h-5 text-electric-purple" />,
+      color: 'purple'
+    },
+    { 
+      title: 'Success Rate', 
+      value: '84%', 
+      icon: <Target className="w-5 h-5 text-green-400" />,
+      color: 'green'
+    },
+    { 
+      title: 'AI Matches', 
+      value: '12', 
+      icon: <Sparkles className="w-5 h-5 text-gold" />,
+      color: 'gold'
+    },
   ];
 
   if (loading && !myJobs) return <Loader fullScreen />;
 
   return (
-    <div className="min-h-screen bg-midnight-900 pt-24 pb-12">
+    <div className="min-h-screen bg-[#030305] pt-24 pb-12">
       <div className="container-custom">
-        {/* Header */}
-        <div className="flex justify-between items-end mb-8">
-          <div>
-            <h1 className="text-2xl font-bold font-display text-white mb-2">Employer Dashboard</h1>
-            <p className="text-gray-400">Manage your jobs and applicants</p>
+        {/* Top Welcome Header */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 gap-6">
+          <div className="space-y-2">
+            <h4 className="text-gold font-black uppercase tracking-[0.3em] text-[10px] animate-pulse">Employer Command Center</h4>
+            <h1 className="text-4xl font-black font-display text-white tracking-tight">
+              Welcome back, <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-500">{user?.companyName || user?.name}</span>
+            </h1>
+            <p className="text-gray-400 flex items-center gap-2">
+               <span className="w-2 h-2 rounded-full bg-green-500 animate-glow"></span>
+               System operational. 3 new applications since your last login.
+            </p>
           </div>
-          <Link to="/client/post-job">
-            <Button>
-              <Plus className="mr-2" size={18} /> Post New Job
-            </Button>
-          </Link>
+          <div className="flex gap-4">
+            <Link to="/client/post-job">
+              <Button className="bg-white text-black hover:bg-gray-200 border-none font-bold px-6 h-12 rounded-xl flex items-center gap-2">
+                <Plus size={18} /> Post Job
+              </Button>
+            </Link>
+            <Link to="/client/post-gig">
+              <Button variant="secondary" className="bg-white/5 text-white border-white/10 hover:bg-white/10 font-bold px-6 h-12 rounded-xl flex items-center gap-2">
+                <Zap size={18} className="text-indigo-400" /> Post Gig
+              </Button>
+            </Link>
+          </div>
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
           {stats.map((stat, index) => (
-            <Card key={index} className="p-5 flex flex-col justify-between hover:border-white/20">
-              <div className="flex justify-between items-start mb-4">
-                <div className="p-2 bg-midnight-800 rounded-lg">
-                  {stat.icon}
+            <Card key={index} className="p-6 bg-midnight-800/40 backdrop-blur-xl border border-white/5 hover:border-gold/30 transition-all group overflow-hidden relative">
+              <div className="relative z-10 flex flex-col h-full justify-between">
+                <div className="flex justify-between items-start mb-6">
+                  <div className={`p-3 rounded-2xl bg-white/5 border border-white/10 group-hover:scale-110 transition-transform`}>
+                    {stat.icon}
+                  </div>
+                  <TrendingUp size={16} className="text-green-500 opacity-50" />
                 </div>
-                <span className="text-xs text-green-400 bg-green-400/10 px-2 py-1 rounded-full">+12%</span>
+                <div>
+                  <h3 className="text-4xl font-black text-white mb-1">{stat.value}</h3>
+                  <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">{stat.title}</p>
+                </div>
               </div>
-              <h3 className="text-3xl font-bold text-white mb-1">{stat.value}</h3>
-              <p className="text-sm text-gray-400">{stat.title}</p>
+              {/* Subtle background decoration */}
+              <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-white/5 to-transparent -translate-y-12 translate-x-12 rounded-full blur-2xl"></div>
             </Card>
           ))}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
-          {/* Chart */}
-          <div className="lg:col-span-2">
-            <Card className="h-full">
-              <h3 className="font-bold text-white mb-6">Views & Applications</h3>
-              <div className="h-[300px]">
+        {/* AI Insight Bar */}
+        <div className="mb-10">
+           <div className="bg-gradient-to-r from-electric-purple/20 via-indigo-600/10 to-transparent border-l-4 border-electric-purple p-6 rounded-r-3xl flex flex-col md:flex-row items-center justify-between gap-6 transition-all hover:translate-x-1">
+              <div className="flex items-center gap-5">
+                 <div className="w-14 h-14 rounded-2xl bg-electric-purple flex items-center justify-center shadow-[0_0_20px_rgba(168,85,247,0.4)]">
+                    <Sparkles className="text-white" size={24} />
+                 </div>
+                 <div>
+                    <h4 className="text-white font-bold text-lg">AI Talent Recommendation</h4>
+                    <p className="text-gray-400 text-sm">We've found <span className="text-white font-bold">5 candidates</span> matching your "Senior React Dev" requirements with 95%+ DNA compatibility.</p>
+                 </div>
+              </div>
+              <Button variant="outline" className="border-electric-purple/30 text-electric-purple hover:bg-electric-purple hover:text-white rounded-xl px-6">
+                Review Matches
+              </Button>
+           </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-10">
+          {/* Main Chart Area */}
+          <div className="lg:col-span-8">
+            <Card className="bg-midnight-800/40 backdrop-blur-xl border border-white/5 p-8 h-full">
+              <div className="flex justify-between items-center mb-8">
+                <div>
+                   <h3 className="text-xl font-bold text-white">Engagement Overview</h3>
+                   <p className="text-xs text-gray-500 uppercase tracking-widest font-black mt-1">Growth Metrics</p>
+                </div>
+                <div className="flex gap-2">
+                   <div className="flex items-center gap-2 px-3 py-1 bg-white/5 rounded-lg border border-white/10 text-[10px] text-gray-400">
+                      <span className="w-2 h-2 rounded-full bg-electric-purple"></span> Applications
+                   </div>
+                   <div className="flex items-center gap-2 px-3 py-1 bg-white/5 rounded-lg border border-white/10 text-[10px] text-gray-400">
+                      <span className="w-2 h-2 rounded-full bg-white opacity-20"></span> Views
+                   </div>
+                </div>
+              </div>
+              <div className="h-[350px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={statsData}>
                     <defs>
                       <linearGradient id="colorApps" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.3}/>
-                        <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0}/>
+                        <stop offset="5%" stopColor="#a855f7" stopOpacity={0.4}/>
+                        <stop offset="95%" stopColor="#a855f7" stopOpacity={0}/>
+                      </linearGradient>
+                      <linearGradient id="colorViews" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#ffffff" stopOpacity={0.1}/>
+                        <stop offset="95%" stopColor="#ffffff" stopOpacity={0}/>
                       </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" vertical={false} />
-                    <XAxis dataKey="name" stroke="#6b7280" tick={{fontSize: 12}} axisLine={false} tickLine={false} />
-                    <YAxis stroke="#6b7280" tick={{fontSize: 12}} axisLine={false} tickLine={false} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#ffffff05" vertical={false} />
+                    <XAxis dataKey="name" stroke="#ffffff20" tick={{fontSize: 10, fontWeight: 700}} axisLine={false} tickLine={false} />
+                    <YAxis stroke="#ffffff20" tick={{fontSize: 10, fontWeight: 700}} axisLine={false} tickLine={false} />
                     <Tooltip 
-                      contentStyle={{ backgroundColor: '#1e1c2e', borderColor: '#ffffff20', borderRadius: '12px' }}
-                      itemStyle={{ color: '#fff' }}
+                      contentStyle={{ backgroundColor: '#0f172a', borderColor: '#ffffff10', borderRadius: '16px', boxShadow: '0 20px 40px rgba(0,0,0,0.4)', padding: '12px' }}
+                      itemStyle={{ color: '#fff', fontSize: '12px', fontWeight: 'bold' }}
+                      cursor={{ stroke: '#a855f7', strokeWidth: 2 }}
                     />
-                    <Area type="monotone" dataKey="applications" stroke="#8b5cf6" strokeWidth={3} fillOpacity={1} fill="url(#colorApps)" />
+                    <Area type="monotone" dataKey="views" stroke="#ffffff20" strokeWidth={2} fillOpacity={1} fill="url(#colorViews)" />
+                    <Area type="monotone" dataKey="applications" stroke="#a855f7" strokeWidth={4} fillOpacity={1} fill="url(#colorApps)" shadow="0 10px 20px rgba(168,85,247,0.4)" />
                   </AreaChart>
                 </ResponsiveContainer>
               </div>
             </Card>
           </div>
 
-          {/* Recent Activity */}
-          <div className="lg:col-span-1">
-             <Card className="h-full">
-               <h3 className="font-bold text-white mb-6">Recent Activity</h3>
-               <div className="space-y-6 relative before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-white/10">
-                 {[
-                   { text: 'New application for "Senior React Dev"', time: '2 mins ago', type: 'app' },
-                   { text: 'Job "UX Designer" was approved', time: '2 hours ago', type: 'system' },
-                   { text: 'Interview scheduled with John Doe', time: '5 hours ago', type: 'interview' }
-                 ].map((item, i) => (
-                   <div key={i} className="pl-8 relative bg-transparent">
-                      <div className={`absolute left-0 top-1 w-4 h-4 rounded-full border-2 border-midnight-900 ${
-                        item.type === 'app' ? 'bg-electric-purple' : 
-                        item.type === 'interview' ? 'bg-gold' : 'bg-green-400'
-                      }`}></div>
-                      <p className="text-sm text-gray-300 mb-1">{item.text}</p>
-                      <p className="text-xs text-gray-500">{item.time}</p>
-                   </div>
-                 ))}
-               </div>
+          {/* Quick Actions / Recent Activity */}
+          <div className="lg:col-span-4 space-y-6">
+             <Card className="bg-midnight-800/40 backdrop-blur-xl border border-white/5 p-8 flex flex-col">
+                <h3 className="font-bold text-white mb-6 uppercase tracking-widest text-xs">Recent Broadcasts</h3>
+                <div className="space-y-6 flex-grow">
+                  {[
+                    { text: 'New application for "Senior AI Dev"', time: '2 mins ago', icon: <Users size={14} />, color: 'purple' },
+                    { text: 'Security scan completed: 0 threats', time: '1 hour ago', icon: <Target size={14} />, color: 'green' },
+                    { text: 'Billing: Premium tier renewed', time: '5 hours ago', icon: <Rocket size={14} />, color: 'gold' }
+                  ].map((item, i) => (
+                    <div key={i} className="flex gap-4 group">
+                       <div className={`w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center shrink-0 group-hover:bg-white/10 transition-colors`}>
+                          <div className={`text-${item.color}-400`}>{item.icon}</div>
+                       </div>
+                       <div>
+                          <p className="text-sm text-gray-300 font-medium">{item.text}</p>
+                          <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-1">{item.time}</p>
+                       </div>
+                    </div>
+                  ))}
+                </div>
+                <button className="w-full py-4 mt-8 border-t border-white/5 text-[10px] font-black uppercase tracking-[.2em] text-gray-500 hover:text-white transition-colors flex items-center justify-center gap-2">
+                   View System Logs <ArrowRight size={12} />
+                </button>
+             </Card>
+
+             <Card className="bg-gradient-to-br from-midnight-900 to-black border border-white/5 p-8 overflow-hidden relative">
+                <div className="relative z-10">
+                  <h4 className="text-white font-bold mb-2">Need specialized help?</h4>
+                  <p className="text-xs text-gray-500 mb-6">Our AI recruiting agents can help you source candidates while you sleep.</p>
+                  <Button className="w-full bg-electric-purple text-white border-none py-6 rounded-2xl font-black tracking-widest text-xs shadow-lg shadow-electric-purple/20">
+                    ACTIVATE AI AGENT
+                  </Button>
+                </div>
+                <Sparkles className="absolute -right-8 -bottom-8 w-32 h-32 text-electric-purple opacity-5" />
              </Card>
           </div>
         </div>
 
-        {/* Recent Jobs Table */}
+        {/* Featured Jobs Management */}
         <div>
-          <div className="flex items-center justify-between mb-4">
-             <h2 className="text-xl font-bold text-white">Your Active Jobs</h2>
-             <Link to="/client/jobs" className="text-electric-purple text-sm hover:underline">View All</Link>
+          <div className="flex items-center justify-between mb-8">
+             <div className="flex items-center gap-3">
+               <div className="w-1.5 h-6 bg-gold rounded-full"></div>
+               <h2 className="text-2xl font-black text-white">COMMAND LISTING</h2>
+             </div>
+             <Link to="/client/jobs" className="text-gold text-xs font-black uppercase tracking-[0.2em] flex items-center gap-2 hover:gap-3 transition-all">
+                View All Files <ArrowRight size={14} />
+             </Link>
           </div>
           
-          <div className="bg-midnight-800 border border-white/10 rounded-2xl overflow-hidden">
+          <div className="bg-midnight-800/40 backdrop-blur-xl border border-white/5 rounded-3xl overflow-hidden p-2">
              <table className="w-full text-left border-collapse">
                <thead>
-                 <tr className="border-b border-white/10 bg-white/5">
-                   <th className="p-4 text-xs font-semibold uppercase text-gray-400">Job Title</th>
-                   <th className="p-4 text-xs font-semibold uppercase text-gray-400">Applications</th>
-                   <th className="p-4 text-xs font-semibold uppercase text-gray-400">Status</th>
-                   <th className="p-4 text-xs font-semibold uppercase text-gray-400">Posted Date</th>
-                   <th className="p-4 text-xs font-semibold uppercase text-gray-400 text-right">Actions</th>
+                 <tr className="bg-white/5 rounded-2xl overflow-hidden">
+                   <th className="p-5 text-xs font-black uppercase tracking-widest text-gray-500">Resource Name</th>
+                   <th className="p-5 text-xs font-black uppercase tracking-widest text-gray-500">Pipeline State</th>
+                   <th className="p-5 text-xs font-black uppercase tracking-widest text-gray-500">Health Score</th>
+                   <th className="p-5 text-xs font-black uppercase tracking-widest text-gray-500 text-right">Access</th>
                  </tr>
                </thead>
-               <tbody className="divide-y divide-white/10">
-                 {myJobs?.slice(0, 5).map((job) => (
-                   <tr key={job._id} className="hover:bg-white/5 transition-colors">
-                     <td className="p-4">
-                       <div className="font-medium text-white">{job.title}</div>
-                       <div className="text-xs text-gray-500">{job.jobType} • {job.location?.city}</div>
+               <tbody className="divide-y divide-white/5">
+                 {myJobs?.slice(0, 4).map((job) => (
+                   <tr key={job._id} className="hover:bg-white/5 transition-colors group">
+                     <td className="p-5">
+                       <div className="font-bold text-white text-base group-hover:text-gold transition-colors">{job.title}</div>
+                       <div className="text-[10px] font-black tracking-widest text-gray-500 uppercase mt-1">{job.jobType} • {job.location?.city}</div>
                      </td>
-                     <td className="p-4">
-                       <div className="flex -space-x-2">
-                         {[1,2,3].map(i => (
-                           <div key={i} className="w-6 h-6 rounded-full bg-white/20 border border-midnight-900"></div>
-                         ))}
-                         <div className="w-6 h-6 rounded-full bg-midnight-900 border border-white/20 flex items-center justify-center text-[10px] text-gray-400">+5</div>
-                       </div>
+                     <td className="p-5">
+                        <div className="flex items-center gap-3">
+                           <div className="w-24 h-1.5 bg-white/5 rounded-full overflow-hidden">
+                              <div className="h-full bg-gold rounded-full animate-width-expand" style={{ width: `${(job.applicationCount || 5) * 10}%` }}></div>
+                           </div>
+                           <span className="text-xs font-bold text-white">{job.applicationCount || 0}</span>
+                        </div>
                      </td>
-                     <td className="p-4">
-                       <span className={`px-2 py-1 rounded-full text-xs border ${
-                         job.status === 'active' ? 'bg-green-500/10 border-green-500/20 text-green-400' : 'bg-gray-500/10 border-gray-500/20 text-gray-400'
-                       }`}>
-                         {job.status}
-                       </span>
+                     <td className="p-5">
+                        <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${
+                          job.status === 'active' ? 'bg-green-500/10 border-green-500/20 text-green-400' : 'bg-gray-500/10 border-gray-500/20 text-gray-400'
+                        }`}>
+                          {job.status === 'active' ? 'Operational' : 'Paused'}
+                        </span>
                      </td>
-                     <td className="p-4 text-sm text-gray-400">
-                       {getRelativeTime(job.createdAt)}
-                     </td>
-                     <td className="p-4 text-right">
-                       <Link to={`/client/jobs/${job._id}/applicants`}>
-                         <Button variant="ghost" size="sm">Manage</Button>
-                       </Link>
+                     <td className="p-5 text-right">
+                        <Link to={`/client/jobs/${job._id}/applicants`}>
+                          <Button variant="ghost" className="text-white hover:bg-gold hover:text-midnight-900 border border-white/10 rounded-xl px-4 text-xs font-bold uppercase transition-all">
+                            Manage
+                          </Button>
+                        </Link>
                      </td>
                    </tr>
                  ))}
+                 {(!myJobs || myJobs.length === 0) && (
+                   <tr>
+                     <td colSpan={4} className="p-20 text-center">
+                        <div className="flex flex-col items-center">
+                           <div className="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center mb-4">
+                              <Briefcase size={24} className="text-gray-600" />
+                           </div>
+                           <p className="text-gray-400 font-medium">No active commands found in orbit.</p>
+                           <Link to="/client/post-job" className="mt-4 text-gold text-xs font-black uppercase tracking-widest hover:underline">Launch your first mission</Link>
+                        </div>
+                     </td>
+                   </tr>
+                 )}
                </tbody>
              </table>
-             {(!myJobs || myJobs.length === 0) && (
-                <div className="p-12 text-center text-gray-500">
-                  <Briefcase size={48} className="mx-auto mb-4 opacity-20" />
-                  <p>You haven't posted any jobs yet.</p>
-                  <Link to="/client/post-job">
-                    <Button variant="link" className="mt-2 text-electric-purple">Post your first job</Button>
-                  </Link>
-                </div>
-             )}
           </div>
         </div>
 

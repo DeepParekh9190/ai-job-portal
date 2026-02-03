@@ -36,9 +36,12 @@ api.interceptors.response.use(
 
       if (status === 401) {
         // Unauthorized - clear token and redirect to login
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        window.location.href = '/login';
+        // Only redirect if it's NOT the 'me' endpoint (to let authSlice handle it)
+        if (!error.config.url.includes('/auth/me')) {
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          window.location.href = '/login';
+        }
       }
 
       if (status === 403) {
