@@ -1,20 +1,20 @@
 import { useEffect, useRef, useState } from 'react';
-import { Search, MapPin, Briefcase, DollarSign, Filter, Clock, Building, ChevronDown, Sparkles } from 'lucide-react';
+import { Search, MapPin, Briefcase, IndianRupee, Filter, Clock, Building, ChevronDown, Sparkles } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
 gsap.registerPlugin(ScrollTrigger);
 
-// Mock Data
+// Mock Data - Expanded Job Listings
 const MOCK_JOBS = [
   {
     id: 1,
     title: "Senior AI Engineer",
-    company: "TechFlow",
+    company: "TechFlow India",
     logo: "https://ui-avatars.com/api/?name=TF&background=8b5cf6&color=fff",
-    location: "San Francisco, CA (Remote)",
-    salary: "$180k - $250k",
+    location: "Bengaluru, KA (Remote)",
+    salary: "₹25L - ₹45L",
     type: "Full-time",
     posted: "2 hours ago",
     tags: ["Python", "PyTorch", "LLMs"],
@@ -23,10 +23,10 @@ const MOCK_JOBS = [
   {
     id: 2,
     title: "Product Designer",
-    company: "InnovateAI",
-    logo: "https://ui-avatars.com/api/?name=IA&background=f59e0b&color=fff",
-    location: "New York, NY",
-    salary: "$130k - $170k",
+    company: "InnovateBharat",
+    logo: "https://ui-avatars.com/api/?name=IB&background=f59e0b&color=fff",
+    location: "Mumbai, MH",
+    salary: "₹18L - ₹28L",
     type: "Full-time",
     posted: "5 hours ago",
     tags: ["Figma", "UI/UX", "Prototyping"],
@@ -34,11 +34,11 @@ const MOCK_JOBS = [
   },
   {
     id: 3,
-    title: "Machine Learning Ops",
+    title: "Machine Learning Ops Engineer",
     company: "DataSphere",
     logo: "https://ui-avatars.com/api/?name=DS&background=10b981&color=fff",
     location: "Remote",
-    salary: "$160k - $220k",
+    salary: "₹22L - ₹35L",
     type: "Contract",
     posted: "1 day ago",
     tags: ["AWS", "Docker", "Kubernetes"],
@@ -49,8 +49,8 @@ const MOCK_JOBS = [
     title: "Frontend Developer",
     company: "FutureScale",
     logo: "https://ui-avatars.com/api/?name=FS&background=ec4899&color=fff",
-    location: "Austin, TX",
-    salary: "$120k - $150k",
+    location: "Pune, MH",
+    salary: "₹12L - ₹20L",
     type: "Full-time",
     posted: "2 days ago",
     tags: ["React", "TypeScript", "Tailwind"],
@@ -61,8 +61,8 @@ const MOCK_JOBS = [
     title: "Data Scientist",
     company: "NeuralNet",
     logo: "https://ui-avatars.com/api/?name=NN&background=6366f1&color=fff",
-    location: "Boston, MA",
-    salary: "$150k - $190k",
+    location: "Hyderabad, TG",
+    salary: "₹20L - ₹32L",
     type: "Full-time",
     posted: "3 days ago",
     tags: ["R", "SQL", "Statistics"],
@@ -73,11 +73,227 @@ const MOCK_JOBS = [
     title: "AI Ethics Researcher",
     company: "CyberPeak",
     logo: "https://ui-avatars.com/api/?name=CP&background=ef4444&color=fff",
-    location: "London, UK (Remote)",
-    salary: "$110k - $160k",
+    location: "Gurgaon, HR (Remote)",
+    salary: "₹15L - ₹25L",
     type: "Part-time",
     posted: "Just now",
     tags: ["Research", "Ethics", "Policy"],
+    isHot: true
+  },
+  {
+    id: 7,
+    title: "Full Stack Developer",
+    company: "CloudNine Technologies",
+    logo: "https://ui-avatars.com/api/?name=CN&background=3b82f6&color=fff",
+    location: "Bengaluru, KA",
+    salary: "₹15L - ₹25L",
+    type: "Full-time",
+    posted: "6 hours ago",
+    tags: ["Node.js", "React", "MongoDB"],
+    isHot: false
+  },
+  {
+    id: 8,
+    title: "DevOps Engineer",
+    company: "ScaleOps",
+    logo: "https://ui-avatars.com/api/?name=SO&background=14b8a6&color=fff",
+    location: "Remote",
+    salary: "₹18L - ₹30L",
+    type: "Full-time",
+    posted: "8 hours ago",
+    tags: ["Jenkins", "Terraform", "CI/CD"],
+    isHot: true
+  },
+  {
+    id: 9,
+    title: "Mobile App Developer (iOS)",
+    company: "AppCraft Studios",
+    logo: "https://ui-avatars.com/api/?name=AC&background=a855f7&color=fff",
+    location: "Chennai, TN",
+    salary: "₹14L - ₹22L",
+    type: "Full-time",
+    posted: "12 hours ago",
+    tags: ["Swift", "SwiftUI", "iOS"],
+    isHot: false
+  },
+  {
+    id: 10,
+    title: "Blockchain Developer",
+    company: "CryptoVerse",
+    logo: "https://ui-avatars.com/api/?name=CV&background=f97316&color=fff",
+    location: "Mumbai, MH (Hybrid)",
+    salary: "₹20L - ₹35L",
+    type: "Full-time",
+    posted: "1 day ago",
+    tags: ["Solidity", "Web3", "Ethereum"],
+    isHot: true
+  },
+  {
+    id: 11,
+    title: "UX Researcher",
+    company: "UserFirst Design",
+    logo: "https://ui-avatars.com/api/?name=UF&background=ec4899&color=fff",
+    location: "Pune, MH",
+    salary: "₹12L - ₹18L",
+    type: "Full-time",
+    posted: "1 day ago",
+    tags: ["User Testing", "Analytics", "Research"],
+    isHot: false
+  },
+  {
+    id: 12,
+    title: "Cloud Architect",
+    company: "SkyTech Solutions",
+    logo: "https://ui-avatars.com/api/?name=ST&background=06b6d4&color=fff",
+    location: "Bengaluru, KA",
+    salary: "₹30L - ₹50L",
+    type: "Full-time",
+    posted: "2 days ago",
+    tags: ["Azure", "AWS", "GCP"],
+    isHot: true
+  },
+  {
+    id: 13,
+    title: "Backend Engineer (Python)",
+    company: "DataFlow Inc",
+    logo: "https://ui-avatars.com/api/?name=DF&background=84cc16&color=fff",
+    location: "Remote",
+    salary: "₹16L - ₹28L",
+    type: "Full-time",
+    posted: "2 days ago",
+    tags: ["Python", "Django", "PostgreSQL"],
+    isHot: false
+  },
+  {
+    id: 14,
+    title: "Cybersecurity Analyst",
+    company: "SecureNet",
+    logo: "https://ui-avatars.com/api/?name=SN&background=dc2626&color=fff",
+    location: "Delhi, DL",
+    salary: "₹18L - ₹32L",
+    type: "Full-time",
+    posted: "3 days ago",
+    tags: ["Penetration Testing", "SIEM", "Security"],
+    isHot: false
+  },
+  {
+    id: 15,
+    title: "QA Automation Engineer",
+    company: "TestPro Labs",
+    logo: "https://ui-avatars.com/api/?name=TP&background=eab308&color=fff",
+    location: "Hyderabad, TG",
+    salary: "₹10L - ₹18L",
+    type: "Full-time",
+    posted: "3 days ago",
+    tags: ["Selenium", "Cypress", "Testing"],
+    isHot: false
+  },
+  {
+    id: 16,
+    title: "Technical Writer",
+    company: "DocuTech",
+    logo: "https://ui-avatars.com/api/?name=DT&background=8b5cf6&color=fff",
+    location: "Remote",
+    salary: "₹8L - ₹15L",
+    type: "Full-time",
+    posted: "4 days ago",
+    tags: ["Documentation", "API Docs", "Writing"],
+    isHot: false
+  },
+  {
+    id: 17,
+    title: "Computer Vision Engineer",
+    company: "VisionAI",
+    logo: "https://ui-avatars.com/api/?name=VA&background=6366f1&color=fff",
+    location: "Bengaluru, KA (Hybrid)",
+    salary: "₹22L - ₹40L",
+    type: "Full-time",
+    posted: "4 days ago",
+    tags: ["OpenCV", "TensorFlow", "Deep Learning"],
+    isHot: true
+  },
+  {
+    id: 18,
+    title: "Product Manager",
+    company: "ProductHub",
+    logo: "https://ui-avatars.com/api/?name=PH&background=f59e0b&color=fff",
+    location: "Mumbai, MH",
+    salary: "₹25L - ₹45L",
+    type: "Full-time",
+    posted: "5 days ago",
+    tags: ["Product Strategy", "Roadmap", "Agile"],
+    isHot: false
+  },
+  {
+    id: 19,
+    title: "Game Developer (Unity)",
+    company: "PlayForge Studios",
+    logo: "https://ui-avatars.com/api/?name=PF&background=a855f7&color=fff",
+    location: "Pune, MH",
+    salary: "₹12L - ₹22L",
+    type: "Full-time",
+    posted: "5 days ago",
+    tags: ["Unity", "C#", "Game Design"],
+    isHot: false
+  },
+  {
+    id: 20,
+    title: "Data Engineer",
+    company: "BigData Corp",
+    logo: "https://ui-avatars.com/api/?name=BD&background=10b981&color=fff",
+    location: "Bengaluru, KA",
+    salary: "₹18L - ₹30L",
+    type: "Full-time",
+    posted: "6 days ago",
+    tags: ["Spark", "Hadoop", "ETL"],
+    isHot: false
+  },
+  {
+    id: 21,
+    title: "NLP Engineer",
+    company: "LanguageTech",
+    logo: "https://ui-avatars.com/api/?name=LT&background=3b82f6&color=fff",
+    location: "Remote",
+    salary: "₹20L - ₹38L",
+    type: "Full-time",
+    posted: "1 week ago",
+    tags: ["NLP", "Transformers", "BERT"],
+    isHot: true
+  },
+  {
+    id: 22,
+    title: "Android Developer",
+    company: "MobileFirst",
+    logo: "https://ui-avatars.com/api/?name=MF&background=84cc16&color=fff",
+    location: "Hyderabad, TG",
+    salary: "₹13L - ₹21L",
+    type: "Full-time",
+    posted: "1 week ago",
+    tags: ["Kotlin", "Jetpack Compose", "Android"],
+    isHot: false
+  },
+  {
+    id: 23,
+    title: "Site Reliability Engineer",
+    company: "ReliableOps",
+    logo: "https://ui-avatars.com/api/?name=RO&background=14b8a6&color=fff",
+    location: "Bengaluru, KA",
+    salary: "₹22L - ₹38L",
+    type: "Full-time",
+    posted: "1 week ago",
+    tags: ["SRE", "Monitoring", "Incident Response"],
+    isHot: false
+  },
+  {
+    id: 24,
+    title: "AI Research Scientist",
+    company: "DeepMind India",
+    logo: "https://ui-avatars.com/api/?name=DM&background=8b5cf6&color=fff",
+    location: "Bengaluru, KA",
+    salary: "₹35L - ₹60L",
+    type: "Full-time",
+    posted: "1 week ago",
+    tags: ["Research", "ML", "Publications"],
     isHot: true
   }
 ];
@@ -86,6 +302,54 @@ const BrowseJobs = () => {
   const containerRef = useRef(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [locationTerm, setLocationTerm] = useState('');
+  const [displayCount, setDisplayCount] = useState(8);
+  const [displayedJobs, setDisplayedJobs] = useState([]);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+
+  // Initialize and update displayed jobs
+  useEffect(() => {
+    // Filter logic here (if search/filter is active, ignore pagination or handle it differently)
+    // For now, simpler implementation:
+    const filtered = MOCK_JOBS.filter(job => {
+      const matchesSearch = job.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                          job.company.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesLocation = job.location.toLowerCase().includes(locationTerm.toLowerCase());
+      return matchesSearch && matchesLocation;
+    });
+
+    if (searchTerm || locationTerm) {
+      setDisplayedJobs(filtered);
+    } else {
+      // If we need more jobs than we have mock data for, generate them
+      if (displayCount > MOCK_JOBS.length) {
+         const extraCount = displayCount - MOCK_JOBS.length;
+         const extraJobs = Array.from({ length: extraCount }).map((_, i) => ({
+            ...MOCK_JOBS[i % MOCK_JOBS.length],
+            id: MOCK_JOBS.length + i + 1,
+            title: MOCK_JOBS[i % MOCK_JOBS.length].title, // Keep original professional title
+            posted: "Just now"
+         }));
+         setDisplayedJobs([...MOCK_JOBS, ...extraJobs]);
+      } else {
+         setDisplayedJobs(filtered.slice(0, displayCount));
+      }
+    }
+  }, [searchTerm, locationTerm, displayCount]);
+
+  const handleLoadMore = () => {
+    setIsLoadingMore(true);
+    // Simulate network delay for effect
+    setTimeout(() => {
+      setDisplayCount(prev => prev + 6);
+      setIsLoadingMore(false);
+      
+      // Refresh animations for new items
+      // We need a slight delay to let React render the new nodes
+      setTimeout(() => {
+        ScrollTrigger.refresh();
+      }, 100);
+    }, 800);
+  };
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -135,7 +399,7 @@ const BrowseJobs = () => {
         <div className="text-center mb-10 page-header">
            <div className="inline-flex items-center gap-2 px-3 py-1 rounded bg-white/5 border border-white/10 mb-4">
               <Briefcase className="w-4 h-4 text-gold" />
-              <span className="text-sm text-gray-300">Over 1,500+ Active Roles</span>
+              <span className="text-sm text-gray-300">24+ Active Roles Across India</span>
            </div>
            <h1 className="text-4xl md:text-5xl font-bold font-display mb-4">
              Find Your <span className="text-electric-purple">Next Mission</span>
@@ -176,7 +440,7 @@ const BrowseJobs = () => {
            {/* Quick Filters */}
            <div className="flex flex-wrap items-center gap-3 mt-4 pt-4 border-t border-white/5">
               <span className="text-sm font-medium text-gray-400 mr-2 flex items-center gap-1"><Filter className="w-3 h-3" /> Filters:</span>
-              {['Full-time', 'Contract', 'Remote', 'Engineering', 'Design', '$150k+'].map((filter, i) => (
+              {['Full-time', 'Contract', 'Remote', 'Engineering', 'Design', '₹15L+'].map((filter, i) => (
                  <button key={i} className="text-xs px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/5 hover:border-white/20 transition-all text-gray-300">
                     {filter}
                  </button>
@@ -186,16 +450,30 @@ const BrowseJobs = () => {
 
         {/* Jobs Grid */}
         <div className="jobs-grid grid grid-cols-1 lg:grid-cols-2 gap-6">
-           {MOCK_JOBS.map((job) => (
+           {displayedJobs.map((job) => (
               <JobCard key={job.id} job={job} />
            ))}
         </div>
 
-        <div className="mt-12 text-center">
-           <button className="px-6 py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full text-white font-medium transition-all group">
-              Load More Opportunities <ChevronDown className="w-4 h-4 inline-block ml-1 group-hover:translate-y-1 transition-transform" />
-           </button>
-        </div>
+        {/* Load More Button */}
+        {!searchTerm && !locationTerm && (
+          <div className="mt-12 text-center">
+             <button 
+                onClick={handleLoadMore}
+                disabled={isLoadingMore}
+                className="px-6 py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full text-white font-medium transition-all group disabled:opacity-50 disabled:cursor-not-allowed"
+             >
+                {isLoadingMore ? (
+                  <span className="flex items-center gap-2">
+                    <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                    Loading...
+                  </span>
+                ) : (
+                  <>Load More Opportunities <ChevronDown className="w-4 h-4 inline-block ml-1 group-hover:translate-y-1 transition-transform" /></>
+                )}
+             </button>
+          </div>
+        )}
 
       </div>
     </div>
@@ -232,7 +510,7 @@ const JobCard = ({ job }) => (
            <MapPin className="w-3.5 h-3.5 text-gray-500" /> {job.location}
         </div>
         <div className="flex items-center gap-1.5 bg-midnight-900/50 px-3 py-1.5 rounded-lg border border-white/5">
-           <DollarSign className="w-3.5 h-3.5 text-gray-500" /> {job.salary}
+           <IndianRupee className="w-3.5 h-3.5 text-gray-500" /> {job.salary}
         </div>
         <div className="flex items-center gap-1.5 bg-midnight-900/50 px-3 py-1.5 rounded-lg border border-white/5">
            <Briefcase className="w-3.5 h-3.5 text-gray-500" /> {job.type}

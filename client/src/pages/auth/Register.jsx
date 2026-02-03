@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom';
 import { register as registerUser, clearError } from '../../redux/slices/authSlice';
-import { Mail, Lock, User, Briefcase, ArrowRight, Loader, Building2 } from 'lucide-react';
+import { Mail, Lock, User, Briefcase, ArrowRight, Loader, Building2, Eye, EyeOff } from 'lucide-react';
 import gsap from 'gsap';
 
 const Register = () => {
@@ -16,6 +16,7 @@ const Register = () => {
   const navigate = useNavigate();
   const { loading, error, isAuthenticated, user } = useSelector((state) => state.auth);
   const formRef = useRef(null);
+  const [showPassword, setShowPassword] = useState(false);
   
   const selectedRole = watch('role');
 
@@ -139,10 +140,18 @@ const Register = () => {
                     message: "Password must be at least 6 characters"
                   }
                 })}
-                type="password"
+                type={showPassword ? "text" : "password"}
                 placeholder="••••••••"
-                className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-white placeholder:text-gray-600 focus:outline-none focus:border-electric-purple focus:ring-1 focus:ring-electric-purple transition-all"
+                className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-12 pr-12 text-white placeholder:text-gray-600 focus:outline-none focus:border-electric-purple focus:ring-1 focus:ring-electric-purple transition-all"
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white transition-colors"
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
             </div>
             {errors.password && <span className="text-xs text-red-400 ml-1">{errors.password.message}</span>}
           </div>

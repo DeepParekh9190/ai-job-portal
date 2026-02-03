@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { getCurrentUser } from './redux/slices/authSlice';
@@ -34,6 +34,8 @@ import PostGig from './pages/client/PostGig';
 import MyJobs from './pages/client/MyJobs';
 import MyGigs from './pages/client/MyGigs';
 import Applicants from './pages/client/Applicants';
+import EditJob from './pages/client/EditJob';
+import EditGig from './pages/client/EditGig';
 
 // Admin Pages
 import AdminDashboard from './pages/admin/Dashboard';
@@ -51,21 +53,35 @@ function App() {
   
   // Global Preloader Logic
   const location = useLocation();
-  const [isPreloaderVisible, setIsPreloaderVisible] = useState(true);
-  const [forcedLoading, setForcedLoading] = useState(true);
+  const [isPreloaderVisible, setIsPreloaderVisible] = useState(false);
+  const [isAuthProcessing, setIsAuthProcessing] = useState(false);
+  const authWasHappening = useRef(false);
 
+  // Show premium animation specifically during login/register transitions
   useEffect(() => {
-    // Show preloader on every route change
-    setIsPreloaderVisible(true);
-  }, [location.pathname]);
+    if (loading) {
+      setIsAuthProcessing(true);
+      authWasHappening.current = true;
+    } else if (isAuthProcessing) {
+      // Only set a timer to hide if we were actually processing
+      const timer = setTimeout(() => {
+        setIsAuthProcessing(false);
+        setTimeout(() => {
+          authWasHappening.current = false;
+        }, 1000); 
+      }, 1500); // reduced from 2500 for better responsiveness
+      return () => clearTimeout(timer);
+    }
+  }, [loading, isAuthProcessing]);
 
-  // Minimum 3-second loading time for presentation feel
+  // Handle route change preloader (only for main pages, not during auth)
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setForcedLoading(false);
-    }, 3000);
-    return () => clearTimeout(timer);
-  }, []);
+    // Only show text preloader on normal navigation
+    // AND only if we didn't just come from an auth animation
+    if (!loading && !isAuthProcessing && !authWasHappening.current) {
+      setIsPreloaderVisible(true);
+    }
+  }, [location.pathname, loading, isAuthProcessing]);
 
   // Load user on app mount if token exists
   useEffect(() => {
@@ -74,31 +90,62 @@ function App() {
     }
   }, [dispatch, token, user]);
 
-  if (loading || forcedLoading) {
+  if (isAuthProcessing) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-[#0a0a0c] text-white overflow-hidden relative">
-        {/* Background glow effect */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-electric-purple/10 rounded-full blur-[120px] -z-10 animate-pulse-slow"></div>
-        
-        <div className="relative flex flex-col items-center gap-6">
-          {/* Animated rings */}
-          <div className="relative w-20 h-20">
-            <div className="absolute top-0 left-0 w-full h-full border-4 border-electric-purple/20 rounded-full"></div>
-            <div className="absolute top-0 left-0 w-full h-full border-4 border-t-electric-purple rounded-full animate-spin"></div>
-            <div className="absolute top-2 left-2 w-16 h-16 border-4 border-gold/10 rounded-full"></div>
-            <div className="absolute top-2 left-2 w-16 h-16 border-4 border-b-gold rounded-full animate-spin-slow"></div>
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[#030305] text-white overflow-hidden relative">
+        {/* Background Data Stream Effect */}
+        <div className="absolute inset-0 z-0 opacity-20 pointer-events-none">
+          <div className="absolute left-1/4 top-0 w-[1px] h-full bg-gradient-to-b from-transparent via-electric-purple to-transparent animate-data-stream"></div>
+          <div className="absolute left-1/2 top-0 w-[1px] h-full bg-gradient-to-b from-transparent via-gold to-transparent animate-data-stream" style={{ animationDelay: '0.5s' }}></div>
+          <div className="absolute left-3/4 top-0 w-[1px] h-full bg-gradient-to-b from-transparent via-electric-purple to-transparent animate-data-stream" style={{ animationDelay: '1.2s' }}></div>
+        </div>
+
+        <div className="relative z-10 flex flex-col items-center gap-12">
+          {/* Central Convergence Core */}
+          <div className="relative flex items-center justify-center w-40 h-40">
+            {/* Outer Hexagon/Pulse */}
+            <div className="absolute inset-0 border-[1px] border-electric-purple/30 rounded-[30%_70%_70%_30%/30%_30%_70%_70%] animate-spin-slow"></div>
+            <div className="absolute inset-4 border-[1px] border-gold/20 rounded-[70%_30%_30%_70%/70%_70%_30%_30%] animate-reverse-spin"></div>
+            
+            {/* Scanning Line */}
+            <div className="absolute w-full h-[2px] bg-gradient-to-r from-transparent via-gold to-transparent animate-scan shadow-[0_0_15px_rgba(255,191,0,0.5)]"></div>
+
+            {/* Inner Core */}
+            <div className="relative w-16 h-16 bg-white/5 backdrop-blur-xl border border-white/20 rounded-2xl flex items-center justify-center overflow-hidden rotate-45 group hover:scale-110 transition-transform duration-500">
+               <div className="absolute inset-0 bg-gradient-to-br from-electric-purple via-indigo-600 to-gold opacity-40 animate-pulse"></div>
+               <div className="relative -rotate-45 text-2xl font-black text-white drop-shadow-lg">T</div>
+            </div>
+
+            {/* Orbiting Satellites */}
+            <div className="absolute w-2 h-2 bg-electric-purple rounded-full shadow-[0_0_10px_#a855f7] animate-orbit"></div>
+            <div className="absolute w-1.5 h-1.5 bg-gold rounded-full shadow-[0_0_10px_#fbbf24] animate-orbit" style={{ animationDelay: '-2s' }}></div>
           </div>
-          
-          <div className="flex flex-col items-center gap-2">
-            <h2 className="text-2xl font-bold tracking-widest bg-gradient-to-r from-white via-white/80 to-white/50 bg-clip-text text-transparent font-display animate-shimmer">
-              TALENTORA AI
+
+          <div className="text-center space-y-4">
+            <h2 className="text-4xl font-black tracking-[0.4em] font-display flex items-center justify-center">
+              <span className="text-white">TALENTORA</span>
+              <span className="ml-4 text-gold animate-flicker">AI</span>
             </h2>
-            <div className="flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 bg-electric-purple rounded-full animate-bounce"></span>
-              <span className="w-1.5 h-1.5 bg-electric-purple rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></span>
-              <span className="w-1.5 h-1.5 bg-electric-purple rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></span>
+            
+            <div className="flex flex-col items-center gap-2">
+              <div className="w-48 h-[1px] bg-white/10 relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-electric-purple to-transparent animate-shimmer"></div>
+              </div>
+              <p className="text-[10px] uppercase font-bold tracking-[0.8em] text-gray-400 animate-pulse">
+                Synchronizing Industry DNA
+              </p>
             </div>
           </div>
+        </div>
+
+        {/* Floating Code Snippets Silhouette */}
+        <div className="absolute bottom-10 right-10 text-[8px] font-mono text-electric-purple/10 pointer-events-none hidden lg:block">
+          <pre>{`
+            function synchronize() {
+              const dna = talents.map(t => t.skills);
+              return match(dna, opportunities);
+            }
+          `}</pre>
         </div>
       </div>
     );
@@ -229,6 +276,22 @@ function App() {
             element={
               <ProtectedRoute allowedRoles={['client']}>
                 <Applicants />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/client/jobs/:id/edit"
+            element={
+              <ProtectedRoute allowedRoles={['client']}>
+                <EditJob />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/client/gigs/:id/edit"
+            element={
+              <ProtectedRoute allowedRoles={['client']}>
+                <EditGig />
               </ProtectedRoute>
             }
           />

@@ -22,20 +22,20 @@ const Home = () => {
   const testimonials = [
     {
       quote: "Talentora AI transformed our hiring process. We found the perfect senior developer in 24 hours, and the AI matching was uncannily accurate.",
-      author: "Sarah Chen",
-      role: "CTO, TechFlow",
+      author: "Sanya Malhotra",
+      role: "CTO, TechFlow India",
       image: "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=150&h=150&fit=crop&crop=faces"
     },
     {
       quote: "As a candidate, I was tired of ghosting. Talentora connected me with serious companies that valued my specific skill set immediately.",
-      author: "Marcus Johnson",
+      author: "Arjun Sharma",
       role: "Senior UX Designer",
       image: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop&crop=faces"
     },
     {
       quote: "The Verified Talent feature gave us complete peace of mind. We hired a remote team of five, and every single one has been a superstar.",
-      author: "Elena Rodriguez",
-      role: "VP of People, InnovateAI",
+      author: "Priya Patel",
+      role: "VP of People, InnovateBharat",
       image: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&h=150&fit=crop&crop=faces"
     }
   ];
@@ -228,7 +228,6 @@ const Home = () => {
             </div>
         </div>
       </section>
-
       {/* Features Section */}
       <section className="py-24 relative">
         <div className="container-custom">
@@ -257,6 +256,103 @@ const Home = () => {
               title="Instant Matching"
               desc="Our algorithms connect you with the right fit in seconds, not days."
             />
+          </div>
+        </div>
+      </section>
+
+      {/* AI Resume Builder Section */}
+      <section className="py-24 relative overflow-hidden bg-midnight-800/30">
+        <div className="container-custom relative z-10">
+          <div className="flex flex-col lg:flex-row items-center gap-16">
+            {/* Image Segment */}
+            <div className="lg:w-1/2 relative group">
+              <div className="absolute -inset-4 bg-gradient-to-r from-electric-purple/20 to-gold/20 rounded-[2rem] blur-2xl opacity-50 group-hover:opacity-100 transition-opacity"></div>
+              <div className="relative rounded-[2rem] border border-white/10 overflow-hidden backdrop-blur-sm bg-white/5 shadow-2xl">
+                <img 
+                  src="/ai-resume-builder.png" 
+                  alt="AI Resume Builder Interface" 
+                  className="w-full h-auto transition-transform duration-700 group-hover:scale-105"
+                />
+              </div>
+              
+              {/* Floating badges */}
+              <div className="absolute top-10 -right-8 bg-midnight-900/80 backdrop-blur-md border border-white/10 p-4 rounded-2xl shadow-xl animate-bounce-slow hidden md:block">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center text-green-400">
+                    <TrendingUp size={20} />
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-400 font-medium">ATS Score</p>
+                    <p className="text-lg font-bold text-white">98/100</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="absolute -bottom-6 -left-8 bg-midnight-900/80 backdrop-blur-md border border-white/10 p-4 rounded-2xl shadow-xl animate-float hidden md:block" style={{ animationDelay: '1s' }}>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-electric-purple/20 flex items-center justify-center text-electric-purple">
+                    <Zap size={20} />
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-400 font-medium">AI Optimization</p>
+                    <p className="text-sm font-bold text-white">Instant Feedback</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Content Segment */}
+            <div className="lg:w-1/2 space-y-8">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-electric-purple/10 border border-electric-purple/20 text-electric-purple text-xs font-bold tracking-widest uppercase">
+                New Feature
+              </div>
+              <h2 className="text-4xl lg:text-5xl font-bold font-display leading-tight">
+                Craft Your Story with <br />
+                <span className="text-electric-purple">AI Intelligence</span>
+              </h2>
+              <p className="text-lg text-gray-400 leading-relaxed">
+                Our smart builder doesn't just fill templates. It analyzes your career trajectory, suggests powerful industry keywords, and optimizes your layout for both human recruiters and ATS algorithms.
+              </p>
+              
+              <ul className="space-y-4">
+                <li className="flex items-start gap-3">
+                  <div className="mt-1 bg-gold/20 p-1 rounded-full">
+                    <Star className="w-3 h-3 text-gold" fill="currentColor" />
+                  </div>
+                  <div>
+                    <p className="font-bold text-white">Dynamic AI Suggestions</p>
+                    <p className="text-sm text-gray-500">Real-time content recommendations based on your unique experience.</p>
+                  </div>
+                </li>
+                <li className="flex items-start gap-3">
+                  <div className="mt-1 bg-electric-purple/20 p-1 rounded-full">
+                    <Star className="w-3 h-3 text-electric-purple" fill="currentColor" />
+                  </div>
+                  <div>
+                    <p className="font-bold text-white">ATS Optimization</p>
+                    <p className="text-sm text-gray-500">Built-in checks to ensure your resume passes through screening bots.</p>
+                  </div>
+                </li>
+                <li className="flex items-start gap-3">
+                  <div className="mt-1 bg-blue-500/20 p-1 rounded-full">
+                    <Star className="w-3 h-3 text-blue-400" fill="currentColor" />
+                  </div>
+                  <div>
+                    <p className="font-bold text-white">Premium Exports</p>
+                    <p className="text-sm text-gray-500">Download high-definition, professionally designed PDF resumes instantly.</p>
+                  </div>
+                </li>
+              </ul>
+
+              <div className="pt-4">
+                <Link 
+                  to="/user/resume-builder"
+                  className="px-10 py-4 bg-gradient-to-r from-electric-purple to-indigo-600 rounded-full text-white font-bold inline-flex items-center gap-3 hover:shadow-lg hover:shadow-electric-purple/20 transition-all border border-white/5 active:scale-95"
+                >
+                  Start Building <Zap className="w-5 h-5" />
+                </Link>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -420,8 +516,8 @@ const Home = () => {
                     </div>
                     <div>
                       <h4 className="font-bold mb-1">Visit Us</h4>
-                      <p className="text-gray-400">100 Innovation Drive</p>
-                      <p className="text-gray-400">San Francisco, CA 94105</p>
+                      <p className="text-gray-400">100 Innovation Hub, Electronic City</p>
+                      <p className="text-gray-400">Bengaluru, Karnataka 560100</p>
                     </div>
                   </div>
                 </div>

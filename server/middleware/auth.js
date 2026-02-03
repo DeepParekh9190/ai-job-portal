@@ -33,8 +33,13 @@ export const protect = async (req, res, next) => {
     } else if (decoded.role === 'client') {
       user = await Client.findById(decoded.id).select('-password');
     } else if (decoded.role === 'admin') {
-      // For admin, you can create separate Admin model or use User with admin role
       user = await User.findById(decoded.id).select('-password');
+    } else {
+      // Fallback for older tokens missing role - search both models
+      user = await User.findById(decoded.id).select('-password');
+      if (!user) {
+        user = await Client.findById(decoded.id).select('-password');
+      }
     }
 
     // Check if user exists
@@ -55,8 +60,8 @@ export const protect = async (req, res, next) => {
 
     // Attach user to request object
     req.user = user;
-    req.userId = decoded.id;
-    req.userRole = decoded.role;
+    req.userId = user._id;
+    req.userRole = user.role; // Use the role from the resolved user record
 
     next();
   } catch (error) {
@@ -110,8 +115,8 @@ export const optionalAuth = async (req, res, next) => {
 
     if (user && user.isActive) {
       req.user = user;
-      req.userId = decoded.id;
-      req.userRole = decoded.role;
+      req.userId = user._id;
+      req.userRole = user.role;
     }
   } catch (error) {
     // Silently fail for optional auth
