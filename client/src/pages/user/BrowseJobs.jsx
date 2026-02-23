@@ -1,355 +1,41 @@
 import { useEffect, useRef, useState } from 'react';
 import { Search, MapPin, Briefcase, IndianRupee, Filter, Clock, Building, ChevronDown, Sparkles } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
+import { getAllJobs } from '../../redux/slices/jobSlice';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
 gsap.registerPlugin(ScrollTrigger);
 
-// Mock Data - Expanded Job Listings
-const MOCK_JOBS = [
-  {
-    id: 1,
-    title: "Senior AI Engineer",
-    company: "TechFlow India",
-    logo: "https://ui-avatars.com/api/?name=TF&background=8b5cf6&color=fff",
-    location: "Bengaluru, KA (Remote)",
-    salary: "₹25L - ₹45L",
-    type: "Full-time",
-    posted: "2 hours ago",
-    tags: ["Python", "PyTorch", "LLMs"],
-    isHot: true
-  },
-  {
-    id: 2,
-    title: "Product Designer",
-    company: "InnovateBharat",
-    logo: "https://ui-avatars.com/api/?name=IB&background=f59e0b&color=fff",
-    location: "Mumbai, MH",
-    salary: "₹18L - ₹28L",
-    type: "Full-time",
-    posted: "5 hours ago",
-    tags: ["Figma", "UI/UX", "Prototyping"],
-    isHot: false
-  },
-  {
-    id: 3,
-    title: "Machine Learning Ops Engineer",
-    company: "DataSphere",
-    logo: "https://ui-avatars.com/api/?name=DS&background=10b981&color=fff",
-    location: "Remote",
-    salary: "₹22L - ₹35L",
-    type: "Contract",
-    posted: "1 day ago",
-    tags: ["AWS", "Docker", "Kubernetes"],
-    isHot: false
-  },
-  {
-    id: 4,
-    title: "Frontend Developer",
-    company: "FutureScale",
-    logo: "https://ui-avatars.com/api/?name=FS&background=ec4899&color=fff",
-    location: "Pune, MH",
-    salary: "₹12L - ₹20L",
-    type: "Full-time",
-    posted: "2 days ago",
-    tags: ["React", "TypeScript", "Tailwind"],
-    isHot: true
-  },
-  {
-    id: 5,
-    title: "Data Scientist",
-    company: "NeuralNet",
-    logo: "https://ui-avatars.com/api/?name=NN&background=6366f1&color=fff",
-    location: "Hyderabad, TG",
-    salary: "₹20L - ₹32L",
-    type: "Full-time",
-    posted: "3 days ago",
-    tags: ["R", "SQL", "Statistics"],
-    isHot: false
-  },
-  {
-    id: 6,
-    title: "AI Ethics Researcher",
-    company: "CyberPeak",
-    logo: "https://ui-avatars.com/api/?name=CP&background=ef4444&color=fff",
-    location: "Gurgaon, HR (Remote)",
-    salary: "₹15L - ₹25L",
-    type: "Part-time",
-    posted: "Just now",
-    tags: ["Research", "Ethics", "Policy"],
-    isHot: true
-  },
-  {
-    id: 7,
-    title: "Full Stack Developer",
-    company: "CloudNine Technologies",
-    logo: "https://ui-avatars.com/api/?name=CN&background=3b82f6&color=fff",
-    location: "Bengaluru, KA",
-    salary: "₹15L - ₹25L",
-    type: "Full-time",
-    posted: "6 hours ago",
-    tags: ["Node.js", "React", "MongoDB"],
-    isHot: false
-  },
-  {
-    id: 8,
-    title: "DevOps Engineer",
-    company: "ScaleOps",
-    logo: "https://ui-avatars.com/api/?name=SO&background=14b8a6&color=fff",
-    location: "Remote",
-    salary: "₹18L - ₹30L",
-    type: "Full-time",
-    posted: "8 hours ago",
-    tags: ["Jenkins", "Terraform", "CI/CD"],
-    isHot: true
-  },
-  {
-    id: 9,
-    title: "Mobile App Developer (iOS)",
-    company: "AppCraft Studios",
-    logo: "https://ui-avatars.com/api/?name=AC&background=a855f7&color=fff",
-    location: "Chennai, TN",
-    salary: "₹14L - ₹22L",
-    type: "Full-time",
-    posted: "12 hours ago",
-    tags: ["Swift", "SwiftUI", "iOS"],
-    isHot: false
-  },
-  {
-    id: 10,
-    title: "Blockchain Developer",
-    company: "CryptoVerse",
-    logo: "https://ui-avatars.com/api/?name=CV&background=f97316&color=fff",
-    location: "Mumbai, MH (Hybrid)",
-    salary: "₹20L - ₹35L",
-    type: "Full-time",
-    posted: "1 day ago",
-    tags: ["Solidity", "Web3", "Ethereum"],
-    isHot: true
-  },
-  {
-    id: 11,
-    title: "UX Researcher",
-    company: "UserFirst Design",
-    logo: "https://ui-avatars.com/api/?name=UF&background=ec4899&color=fff",
-    location: "Pune, MH",
-    salary: "₹12L - ₹18L",
-    type: "Full-time",
-    posted: "1 day ago",
-    tags: ["User Testing", "Analytics", "Research"],
-    isHot: false
-  },
-  {
-    id: 12,
-    title: "Cloud Architect",
-    company: "SkyTech Solutions",
-    logo: "https://ui-avatars.com/api/?name=ST&background=06b6d4&color=fff",
-    location: "Bengaluru, KA",
-    salary: "₹30L - ₹50L",
-    type: "Full-time",
-    posted: "2 days ago",
-    tags: ["Azure", "AWS", "GCP"],
-    isHot: true
-  },
-  {
-    id: 13,
-    title: "Backend Engineer (Python)",
-    company: "DataFlow Inc",
-    logo: "https://ui-avatars.com/api/?name=DF&background=84cc16&color=fff",
-    location: "Remote",
-    salary: "₹16L - ₹28L",
-    type: "Full-time",
-    posted: "2 days ago",
-    tags: ["Python", "Django", "PostgreSQL"],
-    isHot: false
-  },
-  {
-    id: 14,
-    title: "Cybersecurity Analyst",
-    company: "SecureNet",
-    logo: "https://ui-avatars.com/api/?name=SN&background=dc2626&color=fff",
-    location: "Delhi, DL",
-    salary: "₹18L - ₹32L",
-    type: "Full-time",
-    posted: "3 days ago",
-    tags: ["Penetration Testing", "SIEM", "Security"],
-    isHot: false
-  },
-  {
-    id: 15,
-    title: "QA Automation Engineer",
-    company: "TestPro Labs",
-    logo: "https://ui-avatars.com/api/?name=TP&background=eab308&color=fff",
-    location: "Hyderabad, TG",
-    salary: "₹10L - ₹18L",
-    type: "Full-time",
-    posted: "3 days ago",
-    tags: ["Selenium", "Cypress", "Testing"],
-    isHot: false
-  },
-  {
-    id: 16,
-    title: "Technical Writer",
-    company: "DocuTech",
-    logo: "https://ui-avatars.com/api/?name=DT&background=8b5cf6&color=fff",
-    location: "Remote",
-    salary: "₹8L - ₹15L",
-    type: "Full-time",
-    posted: "4 days ago",
-    tags: ["Documentation", "API Docs", "Writing"],
-    isHot: false
-  },
-  {
-    id: 17,
-    title: "Computer Vision Engineer",
-    company: "VisionAI",
-    logo: "https://ui-avatars.com/api/?name=VA&background=6366f1&color=fff",
-    location: "Bengaluru, KA (Hybrid)",
-    salary: "₹22L - ₹40L",
-    type: "Full-time",
-    posted: "4 days ago",
-    tags: ["OpenCV", "TensorFlow", "Deep Learning"],
-    isHot: true
-  },
-  {
-    id: 18,
-    title: "Product Manager",
-    company: "ProductHub",
-    logo: "https://ui-avatars.com/api/?name=PH&background=f59e0b&color=fff",
-    location: "Mumbai, MH",
-    salary: "₹25L - ₹45L",
-    type: "Full-time",
-    posted: "5 days ago",
-    tags: ["Product Strategy", "Roadmap", "Agile"],
-    isHot: false
-  },
-  {
-    id: 19,
-    title: "Game Developer (Unity)",
-    company: "PlayForge Studios",
-    logo: "https://ui-avatars.com/api/?name=PF&background=a855f7&color=fff",
-    location: "Pune, MH",
-    salary: "₹12L - ₹22L",
-    type: "Full-time",
-    posted: "5 days ago",
-    tags: ["Unity", "C#", "Game Design"],
-    isHot: false
-  },
-  {
-    id: 20,
-    title: "Data Engineer",
-    company: "BigData Corp",
-    logo: "https://ui-avatars.com/api/?name=BD&background=10b981&color=fff",
-    location: "Bengaluru, KA",
-    salary: "₹18L - ₹30L",
-    type: "Full-time",
-    posted: "6 days ago",
-    tags: ["Spark", "Hadoop", "ETL"],
-    isHot: false
-  },
-  {
-    id: 21,
-    title: "NLP Engineer",
-    company: "LanguageTech",
-    logo: "https://ui-avatars.com/api/?name=LT&background=3b82f6&color=fff",
-    location: "Remote",
-    salary: "₹20L - ₹38L",
-    type: "Full-time",
-    posted: "1 week ago",
-    tags: ["NLP", "Transformers", "BERT"],
-    isHot: true
-  },
-  {
-    id: 22,
-    title: "Android Developer",
-    company: "MobileFirst",
-    logo: "https://ui-avatars.com/api/?name=MF&background=84cc16&color=fff",
-    location: "Hyderabad, TG",
-    salary: "₹13L - ₹21L",
-    type: "Full-time",
-    posted: "1 week ago",
-    tags: ["Kotlin", "Jetpack Compose", "Android"],
-    isHot: false
-  },
-  {
-    id: 23,
-    title: "Site Reliability Engineer",
-    company: "ReliableOps",
-    logo: "https://ui-avatars.com/api/?name=RO&background=14b8a6&color=fff",
-    location: "Bengaluru, KA",
-    salary: "₹22L - ₹38L",
-    type: "Full-time",
-    posted: "1 week ago",
-    tags: ["SRE", "Monitoring", "Incident Response"],
-    isHot: false
-  },
-  {
-    id: 24,
-    title: "AI Research Scientist",
-    company: "DeepMind India",
-    logo: "https://ui-avatars.com/api/?name=DM&background=8b5cf6&color=fff",
-    location: "Bengaluru, KA",
-    salary: "₹35L - ₹60L",
-    type: "Full-time",
-    posted: "1 week ago",
-    tags: ["Research", "ML", "Publications"],
-    isHot: true
-  }
-];
 
 const BrowseJobs = () => {
+  const dispatch = useDispatch();
+  const { jobs, loading, pagination, filters } = useSelector((state) => state.job);
   const containerRef = useRef(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [locationTerm, setLocationTerm] = useState('');
   const [displayCount, setDisplayCount] = useState(8);
-  const [displayedJobs, setDisplayedJobs] = useState([]);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
 
-  // Initialize and update displayed jobs
+  // Fetch jobs on mount and when filters/searchTerm/displayCount change
   useEffect(() => {
-    // Filter logic here (if search/filter is active, ignore pagination or handle it differently)
-    // For now, simpler implementation:
-    const filtered = MOCK_JOBS.filter(job => {
-      const matchesSearch = job.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          job.company.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesLocation = job.location.toLowerCase().includes(locationTerm.toLowerCase());
-      return matchesSearch && matchesLocation;
-    });
-
-    if (searchTerm || locationTerm) {
-      setDisplayedJobs(filtered);
-    } else {
-      // If we need more jobs than we have mock data for, generate them
-      if (displayCount > MOCK_JOBS.length) {
-         const extraCount = displayCount - MOCK_JOBS.length;
-         const extraJobs = Array.from({ length: extraCount }).map((_, i) => ({
-            ...MOCK_JOBS[i % MOCK_JOBS.length],
-            id: MOCK_JOBS.length + i + 1,
-            title: MOCK_JOBS[i % MOCK_JOBS.length].title, // Keep original professional title
-            posted: "Just now"
-         }));
-         setDisplayedJobs([...MOCK_JOBS, ...extraJobs]);
-      } else {
-         setDisplayedJobs(filtered.slice(0, displayCount));
-      }
-    }
-  }, [searchTerm, locationTerm, displayCount]);
+    const params = {
+      keyword: searchTerm,
+      location: locationTerm,
+      page: 1,
+      limit: displayCount
+    };
+    dispatch(getAllJobs(params));
+  }, [dispatch, searchTerm, locationTerm, displayCount]);
 
   const handleLoadMore = () => {
-    setIsLoadingMore(true);
-    // Simulate network delay for effect
-    setTimeout(() => {
+    if (jobs.length < pagination.total) {
       setDisplayCount(prev => prev + 6);
-      setIsLoadingMore(false);
-      
-      // Refresh animations for new items
-      // We need a slight delay to let React render the new nodes
-      setTimeout(() => {
-        ScrollTrigger.refresh();
-      }, 100);
-    }, 800);
+    }
   };
+
+  const hasMore = jobs.length < pagination.total;
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -366,23 +52,25 @@ const BrowseJobs = () => {
       );
 
       // Job Cards stagger
-      gsap.fromTo(".job-card",
-        { y: 50, autoAlpha: 0 },
-        {
-          y: 0,
-          autoAlpha: 1,
-          duration: 0.5,
-          stagger: 0.1,
-          scrollTrigger: {
-            trigger: ".jobs-grid",
-            start: "top bottom-=100"
+      if (jobs && jobs.length > 0) {
+        gsap.fromTo(".job-card",
+          { y: 50, autoAlpha: 0 },
+          {
+            y: 0,
+            autoAlpha: 1,
+            duration: 0.5,
+            stagger: 0.1,
+            scrollTrigger: {
+              trigger: ".jobs-grid",
+              start: "top bottom-=100"
+            }
           }
-        }
-      );
+        );
+      }
     }, containerRef);
 
     return () => ctx.revert();
-  }, []);
+  }, [jobs]);
 
   return (
     <div ref={containerRef} className="min-h-screen bg-midnight-900 text-white selection:bg-electric-purple-glow selection:text-white pt-24 pb-20">
@@ -450,28 +138,48 @@ const BrowseJobs = () => {
 
         {/* Jobs Grid */}
         <div className="jobs-grid grid grid-cols-1 lg:grid-cols-2 gap-6">
-           {displayedJobs.map((job) => (
-              <JobCard key={job.id} job={job} />
-           ))}
+           {loading && displayCount <= 8 ? (
+             <div className="col-span-full py-20 text-center">
+                <div className="w-12 h-12 border-4 border-electric-purple/30 border-t-electric-purple rounded-full animate-spin mx-auto mb-4"></div>
+                <p className="text-gray-400">Scanning for opportunities...</p>
+             </div>
+           ) : jobs && jobs.length > 0 ? (
+             jobs.map((job) => (
+               <JobCard key={job._id || job.id} job={job} />
+             ))
+           ) : (
+             <div className="col-span-full py-20 text-center">
+                <p className="text-gray-400">No jobs found matching your criteria.</p>
+             </div>
+           )}
         </div>
 
         {/* Load More Button */}
-        {!searchTerm && !locationTerm && (
+        {hasMore && !searchTerm && !locationTerm && (
           <div className="mt-12 text-center">
              <button 
                 onClick={handleLoadMore}
-                disabled={isLoadingMore}
-                className="px-6 py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full text-white font-medium transition-all group disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={loading}
+                className="px-8 py-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full text-white font-bold transition-all group disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg hover:shadow-white/5 active:scale-95"
              >
-                {isLoadingMore ? (
-                  <span className="flex items-center gap-2">
-                    <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-                    Loading...
-                  </span>
+                {loading && displayCount > 8 ? (
+                   <span className="flex items-center gap-3">
+                     <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                     Analyzing More Roles...
+                   </span>
                 ) : (
-                  <>Load More Opportunities <ChevronDown className="w-4 h-4 inline-block ml-1 group-hover:translate-y-1 transition-transform" /></>
+                   <span className="flex items-center gap-2">
+                     Load More Opportunities 
+                     <ChevronDown className="w-4 h-4 group-hover:translate-y-1 transition-transform" />
+                   </span>
                 )}
              </button>
+          </div>
+        )}
+        
+        {!hasMore && jobs.length > 0 && (
+          <div className="mt-12 text-center">
+            <p className="text-gray-500 text-sm font-medium">You've reached the end of current opportunities. Check back soon!</p>
           </div>
         )}
 
@@ -480,56 +188,66 @@ const BrowseJobs = () => {
   );
 };
 
-const JobCard = ({ job }) => (
-  <Link 
-    to={`/jobs/${job.id}`}
-    className="job-card block group relative bg-white/5 hover:bg-white/[0.07] border border-white/10 hover:border-electric-purple/30 rounded-2xl p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
-  >
-     {job.isHot && (
-        <div className="absolute top-4 right-4">
-           <div className="flex items-center gap-1 px-2 py-1 rounded bg-gold/10 border border-gold/20 text-gold text-xs font-bold uppercase tracking-wider">
-              <Sparkles className="w-3 h-3" /> Hot
-           </div>
-        </div>
-     )}
+const JobCard = ({ job }) => {
+  const { _id, id, title, client, location, salary, jobType, tags, isHot, createdAt, requirements } = job;
+  const jobId = _id || id;
+  const companyName = client?.company?.name || client?.name || 'TechFlow India';
+  const displayLocation = location?.city ? `${location.city}, ${location.country || 'India'}` : (typeof location === 'string' ? location : 'Remote');
+  const displaySalary = salary?.min ? `₹${(salary.min / 100000).toFixed(0)}L - ₹${(salary.max / 100000).toFixed(0)}L` : (typeof salary === 'string' ? salary : 'Negotiable');
+  const displayLogo = `https://ui-avatars.com/api/?name=${companyName.substring(0, 2)}&background=8b5cf6&color=fff`;
+  const timeAgo = createdAt ? new Date(createdAt).toLocaleDateString() : 'Just now';
 
-     <div className="flex items-start gap-4 mb-6">
-        <div className="w-16 h-16 rounded-xl bg-midnight-900 border border-white/10 flex items-center justify-center shrink-0 overflow-hidden">
-           <img src={job.logo} alt={job.company} className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity" />
-        </div>
-        <div>
-           <h3 className="text-xl font-bold text-white group-hover:text-electric-purple transition-colors mb-1">{job.title}</h3>
-           <div className="text-gray-400 font-medium flex items-center gap-2 text-sm">
-              <Building className="w-3 h-3" /> {job.company}
-           </div>
-        </div>
-     </div>
+  return (
+    <Link 
+      to={`/jobs/${jobId}`}
+      className="job-card block group relative bg-white/5 hover:bg-white/[0.07] border border-white/10 hover:border-electric-purple/30 rounded-2xl p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
+    >
+       {isHot && (
+          <div className="absolute top-4 right-4">
+             <div className="flex items-center gap-1 px-2 py-1 rounded bg-gold/10 border border-gold/20 text-gold text-xs font-bold uppercase tracking-wider">
+                <Sparkles className="w-3 h-3" /> Hot
+             </div>
+          </div>
+       )}
 
-     <div className="flex flex-wrap gap-4 mb-6 text-sm text-gray-300">
-        <div className="flex items-center gap-1.5 bg-midnight-900/50 px-3 py-1.5 rounded-lg border border-white/5">
-           <MapPin className="w-3.5 h-3.5 text-gray-500" /> {job.location}
-        </div>
-        <div className="flex items-center gap-1.5 bg-midnight-900/50 px-3 py-1.5 rounded-lg border border-white/5">
-           <IndianRupee className="w-3.5 h-3.5 text-gray-500" /> {job.salary}
-        </div>
-        <div className="flex items-center gap-1.5 bg-midnight-900/50 px-3 py-1.5 rounded-lg border border-white/5">
-           <Briefcase className="w-3.5 h-3.5 text-gray-500" /> {job.type}
-        </div>
-     </div>
+       <div className="flex items-start gap-4 mb-6">
+          <div className="w-16 h-16 rounded-xl bg-midnight-900 border border-white/10 flex items-center justify-center shrink-0 overflow-hidden">
+             <img src={displayLogo} alt={companyName} className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity" />
+          </div>
+          <div>
+             <h3 className="text-xl font-bold text-white group-hover:text-electric-purple transition-colors mb-1">{title}</h3>
+             <div className="text-gray-400 font-medium flex items-center gap-2 text-sm">
+                <Building className="w-3 h-3" /> {companyName}
+             </div>
+          </div>
+       </div>
 
-     <div className="flex items-center justify-between mt-auto">
-        <div className="flex gap-2">
-           {job.tags.map((tag, i) => (
-              <span key={i} className="text-xs px-2 py-1 rounded bg-electric-purple/10 text-electric-purple-light border border-electric-purple/20">
-                 {tag}
-              </span>
-           ))}
-        </div>
-        <div className="text-xs text-gray-500 flex items-center gap-1">
-           <Clock className="w-3 h-3" /> {job.posted}
-        </div>
-     </div>
-  </Link>
-);
+       <div className="flex flex-wrap gap-4 mb-6 text-sm text-gray-300">
+          <div className="flex items-center gap-1.5 bg-midnight-900/50 px-3 py-1.5 rounded-lg border border-white/5">
+             <MapPin className="w-3.5 h-3.5 text-gray-500" /> {displayLocation}
+          </div>
+          <div className="flex items-center gap-1.5 bg-midnight-900/50 px-3 py-1.5 rounded-lg border border-white/5">
+             <IndianRupee className="w-3.5 h-3.5 text-gray-500" /> {displaySalary}
+          </div>
+          <div className="flex items-center gap-1.5 bg-midnight-900/50 px-3 py-1.5 rounded-lg border border-white/5">
+             <Briefcase className="w-3.5 h-3.5 text-gray-500" /> {jobType}
+          </div>
+       </div>
+
+       <div className="flex items-center justify-between mt-auto">
+          <div className="flex gap-2">
+             {(tags || requirements?.skills || []).slice(0, 3).map((tag, i) => (
+                <span key={i} className="text-xs px-2 py-1 rounded bg-electric-purple/10 text-electric-purple-light border border-electric-purple/20">
+                   {tag}
+                </span>
+             ))}
+          </div>
+          <div className="text-xs text-gray-500 flex items-center gap-1">
+             <Clock className="w-3 h-3" /> {timeAgo}
+          </div>
+       </div>
+    </Link>
+  );
+};
 
 export default BrowseJobs;

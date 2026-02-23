@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { getJobById } from '../../redux/slices/jobSlice';
 import Loader from '../../components/common/Loader';
@@ -19,85 +19,80 @@ import { getMockJobById } from '../../data/mockJobs';
 const JobDetails = () => {
   const { id } = useParams();
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const { currentJob, loading: jobLoading, error } = useSelector((state) => state.job);
   const { matchScore, loading: matchLoading } = useSelector((state) => state.ai);
   
-  // Optimistic ID-based initialization: Try to get mock data immediately
-  const [displayJob, setDisplayJob] = useState(() => getMockJobById(id));
+  // Try to get mock data only as an ultra-fallback or if id is small (mock)
+  const [displayJob, setDisplayJob] = useState(() => (id?.length < 10 ? getMockJobById(id) : null));
 
-  useEffect(() => {
-    // Only fetch from API if it looks like a real database ID (Mongo ObjectIds are 24 hex chars)
-    // Mock IDs are simple numbers (1, 2, 3...)
-    if (id && id.length >= 24) {
-      dispatch(getJobById(id));
-    }
-  }, [dispatch, id]);
-
-  useEffect(() => {
-    // If API successfully returns a job, use it to update/override the mock data
-    if (currentJob && !error) {
-      setDisplayJob(currentJob);
-    }
-  }, [currentJob, error]);
-
-  useEffect(() => {
-    if (displayJob) {
-      // Only calculate match if it's a real job ID or if we want to mock it later
-      if (id && id.length >= 24) {
-        dispatch(calculateJobMatch({ jobId: id }));
-      }
-    }
-  }, [dispatch, displayJob, id]);
-
-  // Show loader only if we have NO data (neither mock nor API) and are loading
-  if (jobLoading && !displayJob) return <Loader fullScreen />;
-  
-  // Show error only if we have NO data at all
-  if (!displayJob && error) {
-    return (
-      <div className="container-custom py-12 text-center">
-        <h2 className="text-2xl font-bold text-red-500">Job Not Found</h2>
-        <p className="text-gray-400 mt-2">The job you're looking for doesn't exist or has been removed.</p>
-        <Link to="/jobs">
-          <Button variant="secondary" className="mt-4">Back to Jobs</Button>
-        </Link>
-      </div>
-    );
-  }
-
-  const { title, description, requirements, salary, location, jobType, client, createdAt, applicants } = displayJob || {};
-
-  // Mock data for enhanced sections
+  // Defined benefits and perks for display
   const benefits = [
     { icon: Shield, title: "Health Insurance", description: "Comprehensive medical, dental, and vision coverage" },
     { icon: Laptop, title: "Work From Home", description: "Flexible remote work options" },
     { icon: GraduationCap, title: "Learning Budget", description: "₹50,000 annual learning allowance" },
     { icon: Plane, title: "Paid Time Off", description: "25 days PTO + public holidays" },
-    { icon: Coffee, title: "Free Meals", description: "Complimentary breakfast and lunch" },
-    { icon: Gift, title: "Performance Bonus", description: "Annual performance-based bonuses" }
   ];
 
-  const perks = [
-    "Stock options (ESOPs)",
-    "Gym membership",
-    "Mental health support",
-    "Parental leave",
-    "Team outings & events",
-    "Latest tech equipment"
-  ];
+  const perks = ["Free Gym Membership", "Weekly Team Lunch", "Pet Friendly Office", "Personal Growth Plan"];
+
+  useEffect(() => {
+    if (id && id.length >= 24) {
+      dispatch(getJobById(id));
+      dispatch(calculateJobMatch(id));
+    }
+  }, [dispatch, id]);
+
+  useEffect(() => {
+    if (currentJob && !error) {
+      setDisplayJob(currentJob);
+    }
+  }, [currentJob, error]);
+
+  if (jobLoading && !displayJob) return <Loader fullScreen />;
+  
+  if (!displayJob && error) {
+    return (
+      <div className="container-custom py-24 text-center">
+        <h2 className="text-2xl font-bold text-red-500">Job Not Found</h2>
+        <p className="text-gray-400 mt-2">The job you're looking for doesn't exist or has been removed.</p>
+        <Link to="/jobs">
+          <Button variant="secondary" className="mt-6">Back to Jobs</Button>
+        </Link>
+      </div>
+    );
+  }
+
+  const { 
+    title, 
+    description, 
+    requirements, 
+    salary, 
+    location, 
+    jobType, 
+    client, 
+    createdAt, 
+    applicants,
+    responsibilities: respsEnv,
+    benefits: benefitsEnv
+  } = displayJob || {};
+
+  const companyName = client?.company?.name || client?.name || 'TechFlow India';
+  const displayLocation = location?.city ? `${location.city}, ${location.country || 'India'}` : (typeof location === 'string' ? location : 'Remote');
+  const displaySalary = salary?.min ? formatSalary(salary.min, salary.max) : (typeof salary === 'string' ? salary : 'Negotiable');
+  const displayType = jobType || 'Full-time';
+  const displayLogo = `https://ui-avatars.com/api/?name=${companyName.substring(0,2)}&background=8b5cf6&color=fff`;
+  const applicantCount = applicants?.length || displayJob?.stats?.applications || 0;
 
   const interviewProcess = [
     { step: 1, title: "Application Review", duration: "2-3 days", description: "Our team reviews your application and resume" },
-    { step: 2, title: "Phone Screening", duration: "30 mins", description: "Brief call with HR to discuss your background" },
-    { step: 3, title: "Technical Assessment", duration: "1-2 hours", description: "Coding challenge or technical task" },
-    { step: 4, title: "Team Interview", duration: "1 hour", description: "Meet with potential team members" },
-    { step: 5, title: "Final Round", duration: "45 mins", description: "Discussion with hiring manager" }
+    { step: 2, title: "Technical Assessment", duration: "1-2 hours", description: "Coding challenge or technical task" },
+    { step: 3, title: "Final Round", duration: "45 mins", description: "Discussion with hiring manager" }
   ];
 
   const similarJobs = [
-    { id: 2, title: "Product Designer", company: "InnovateBharat", salary: "₹18L - ₹28L", location: "Mumbai, MH" },
-    { id: 4, title: "Frontend Developer", company: "FutureScale", salary: "₹12L - ₹20L", location: "Pune, MH" },
-    { id: 7, title: "Full Stack Developer", company: "CloudNine Technologies", salary: "₹15L - ₹25L", location: "Bengaluru, KA" }
+    { id: '2', title: "Product Designer", company: "InnovateBharat", salary: "₹18L - ₹28L", location: "Mumbai" },
+    { id: '4', title: "Frontend Developer", company: "FutureScale", salary: "₹12L - ₹20L", location: "Pune" },
   ];
 
   return (
@@ -120,40 +115,41 @@ const JobDetails = () => {
               {/* Left: Job Info */}
               <div className="flex-1">
                 <div className="flex items-start gap-4 mb-6">
-                  <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-electric-purple to-electric-purple-light flex items-center justify-center text-4xl font-bold text-white border border-white/20 shadow-lg">
-                    {client?.company?.name?.charAt(0) || 'C'}
+                  <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-electric-purple to-electric-purple-light flex items-center justify-center text-4xl font-bold text-white border border-white/20 shadow-lg shrink-0 overflow-hidden">
+                    <img src={displayLogo} alt={companyName} className="w-full h-full object-cover" />
                   </div>
                   <div>
                     <h1 className="text-4xl font-bold font-display text-white mb-2">{title}</h1>
                     <div className="flex flex-wrap gap-4 text-gray-400">
-                      <span className="flex items-center gap-1.5"><Building2 size={16} /> {client?.company?.name || 'TechFlow India'}</span>
-                      <span className="flex items-center gap-1.5"><MapPin size={16} /> {location?.city || 'Bengaluru'}, {location?.country || 'India'}</span>
-                      <span className="flex items-center gap-1.5"><Clock size={16} /> Posted {getRelativeTime(createdAt) || '2 hours ago'}</span>
-                      <span className="flex items-center gap-1.5"><Users size={16} /> {applicants?.length || 47} applicants</span>
+                      <span className="flex items-center gap-1.5"><Building2 size={16} /> {companyName}</span>
+                      <span className="flex items-center gap-1.5"><MapPin size={16} /> {displayLocation}</span>
+                      <span className="flex items-center gap-1.5"><Clock size={16} /> Posted {getRelativeTime(createdAt) || 'Recent'}</span>
+                      <span className="flex items-center gap-1.5"><Users size={16} /> {applicantCount} applicants</span>
                     </div>
                   </div>
                 </div>
 
                 <div className="flex flex-wrap gap-3 mb-6">
                   <span className="px-4 py-2 rounded-full bg-electric-purple/10 text-electric-purple border border-electric-purple/20 text-sm font-medium flex items-center gap-2">
-                    <Briefcase size={14} /> {jobType || 'Full-time'}
+                    <Briefcase size={14} /> {displayType}
                   </span>
                   <span className="px-4 py-2 rounded-full bg-green-500/10 text-green-400 border border-green-500/20 text-sm font-medium flex items-center gap-2">
-                    <IndianRupee size={14} /> {formatSalary(salary?.min, salary?.max) || '₹25L - ₹45L'}
+                    <IndianRupee size={14} /> {displaySalary}
                   </span>
                   <span className="px-4 py-2 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20 text-sm font-medium flex items-center gap-2">
-                    <Calendar size={14} /> Apply by {formatDate(new Date(Date.now() + 86400000 * 14))}
-                  </span>
-                  <span className="px-4 py-2 rounded-full bg-gold/10 text-gold border border-gold/20 text-sm font-medium flex items-center gap-2">
-                    <TrendingUp size={14} /> Actively Hiring
+                    <Calendar size={14} /> Actively Hiring
                   </span>
                 </div>
 
                 {/* Action Buttons */}
                 <div className="flex flex-wrap gap-3">
-                  <Link to={`/user/jobs/${id}/apply`} className="flex-1 min-w-[200px]">
-                    <Button className="w-full" size="lg">Apply Now</Button>
-                  </Link>
+                  <Button 
+                    className="flex-1 min-w-[200px]" 
+                    size="lg"
+                    onClick={() => navigate(`/user/jobs/${id}/apply`)}
+                  >
+                    Apply Now
+                  </Button>
                   <Button variant="secondary" className="flex items-center gap-2">
                     <Bookmark size={16} /> Save
                   </Button>
@@ -166,8 +162,9 @@ const JobDetails = () => {
               {/* Right: Match Score */}
               <div className="w-full lg:w-80">
                 <MatchScore 
-                  score={matchScore?.score || 85} 
+                  score={matchScore?.overallScore || 0} 
                   breakdown={matchScore?.breakdown} 
+                  isLoading={matchLoading}
                 />
               </div>
             </div>
@@ -404,14 +401,38 @@ In this role, you'll collaborate with cross-functional teams to design, implemen
               </div>
             </Card>
 
-            {/* Contact Recruiter */}
+            {/* Posted By / Contact Recruiter */}
             <Card className="bg-gradient-to-br from-electric-purple/10 to-gold/10 border-electric-purple/20">
-              <h3 className="font-bold text-lg mb-3">Have Questions?</h3>
-              <p className="text-sm text-gray-300 mb-4">
-                Reach out to our recruitment team for more information about this role.
-              </p>
+              <h3 className="font-bold text-lg mb-4">Posted By</h3>
+              <div className="flex items-center gap-4 mb-4">
+                <img 
+                  src={client?.avatar || `https://ui-avatars.com/api/?name=${client?.name || 'Recruiter'}&background=random&color=fff`} 
+                  alt={client?.name} 
+                  className="w-12 h-12 rounded-full border-2 border-electric-purple/30"
+                />
+                <div>
+                  <h4 className="font-bold text-white leading-tight">{client?.name || 'Recruiting Team'}</h4>
+                  <p className="text-sm text-gray-400">{client?.role || 'HR Department'}</p>
+                </div>
+              </div>
+              
+              <div className="space-y-3 mb-4">
+                <div className="flex items-center gap-3 text-sm text-gray-300">
+                  <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-electric-purple">
+                    <CheckCircle size={16} />
+                  </div>
+                  <span>Responsive Employer</span>
+                </div>
+                <div className="flex items-center gap-3 text-sm text-gray-300">
+                  <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-gold">
+                    <Award size={16} />
+                  </div>
+                  <span>Top Rated Recruiter</span>
+                </div>
+              </div>
+
               <Button variant="secondary" className="w-full flex items-center justify-center gap-2">
-                <Mail size={16} /> Contact Recruiter
+                <Mail size={16} /> Contact {client?.name?.split(' ')[0] || 'Recruiter'}
               </Button>
             </Card>
           </div>

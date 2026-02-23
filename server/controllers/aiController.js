@@ -375,14 +375,14 @@ export const generateCoverLetterAI = async (req, res) => {
     const coverLetter = await generateCoverLetter(
       {
         name: user.name,
-        title: user.professional?.title,
-        experience: user.professional?.experience,
-        skills: user.professional?.skills
+        title: user.professional?.title || 'Professional',
+        experience: user.professional?.experience || 0,
+        skills: user.professional?.skills || []
       },
       {
         title: job.title,
-        company: job.client?.company?.name,
-        requirements: job.requirements?.skills
+        company: job.client?.company?.name || 'Company',
+        requirements: job.requirements?.skills || []
       }
     );
 

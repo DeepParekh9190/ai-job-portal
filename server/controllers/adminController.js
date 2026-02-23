@@ -521,60 +521,66 @@ export const approveGig = async (req, res) => {
  */
 export const getAnalytics = async (req, res) => {
   try {
-    // User statistics
-    const totalUsers = await User.countDocuments();
-    const activeUsers = await User.countDocuments({ isActive: true });
-    const verifiedUsers = await User.countDocuments({ isEmailVerified: true });
-
-    // Client statistics
-    const totalClients = await Client.countDocuments();
-    const activeClients = await Client.countDocuments({ isActive: true });
-    const verifiedClients = await Client.countDocuments({ isVerified: true });
-    const pendingVerification = await Client.countDocuments({ verificationStatus: 'pending' });
-
-    // Job statistics
-    const totalJobs = await Job.countDocuments();
-    const activeJobs = await Job.countDocuments({ status: 'active', approvalStatus: 'approved' });
-    const pendingJobs = await Job.countDocuments({ approvalStatus: 'pending' });
-    const filledJobs = await Job.countDocuments({ status: 'filled' });
-
-    // Gig statistics
-    const totalGigs = await Gig.countDocuments();
-    const activeGigs = await Gig.countDocuments({ status: 'active', approvalStatus: 'approved' });
-    const pendingGigs = await Gig.countDocuments({ approvalStatus: 'pending' });
-    const completedGigs = await Gig.countDocuments({ status: 'completed' });
-
-    // Application statistics
-    const totalApplications = await Application.countDocuments();
-    const applicationsByStatus = await Application.aggregate([
-      {
-        $group: {
-          _id: '$status',
-          count: { $sum: 1 }
-        }
-      }
-    ]);
-
-    // Recent activity (last 30 days)
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-    const newUsersLast30Days = await User.countDocuments({ createdAt: { $gte: thirtyDaysAgo } });
-    const newClientsLast30Days = await Client.countDocuments({ createdAt: { $gte: thirtyDaysAgo } });
-    const newJobsLast30Days = await Job.countDocuments({ createdAt: { $gte: thirtyDaysAgo } });
-    const newApplicationsLast30Days = await Application.countDocuments({ createdAt: { $gte: thirtyDaysAgo } });
 
-    // Top categories
-    const topJobCategories = await Job.aggregate([
-      { $match: { status: 'active' } },
-      { $group: { _id: '$category', count: { $sum: 1 } } },
-      { $sort: { count: -1 } },
-      { $limit: 5 }
-    ]);
-
-    const topGigCategories = await Gig.aggregate([
-      { $match: { status: 'active' } },
-      { $group: { _id: '$category', count: { $sum: 1 } } },
-      { $sort: { count: -1 } },
-      { $limit: 5 }
+    const [
+      totalUsers,
+      activeUsers,
+      verifiedUsers,
+      totalClients,
+      activeClients,
+      verifiedClients,
+      pendingVerification,
+      totalJobs,
+      activeJobs,
+      pendingJobs,
+      filledJobs,
+      totalGigs,
+      activeGigs,
+      pendingGigs,
+      completedGigs,
+      totalApplications,
+      applicationsByStatus,
+      newUsersLast30Days,
+      newClientsLast30Days,
+      newJobsLast30Days,
+      newApplicationsLast30Days,
+      topJobCategories,
+      topGigCategories
+    ] = await Promise.all([
+      User.countDocuments(),
+      User.countDocuments({ isActive: true }),
+      User.countDocuments({ isEmailVerified: true }),
+      Client.countDocuments(),
+      Client.countDocuments({ isActive: true }),
+      Client.countDocuments({ isVerified: true }),
+      Client.countDocuments({ verificationStatus: 'pending' }),
+      Job.countDocuments(),
+      Job.countDocuments({ status: 'active', approvalStatus: 'approved' }),
+      Job.countDocuments({ approvalStatus: 'pending' }),
+      Job.countDocuments({ status: 'filled' }),
+      Gig.countDocuments(),
+      Gig.countDocuments({ status: 'active', approvalStatus: 'approved' }),
+      Gig.countDocuments({ approvalStatus: 'pending' }),
+      Gig.countDocuments({ status: 'completed' }),
+      Application.countDocuments(),
+      Application.aggregate([{ $group: { _id: '$status', count: { $sum: 1 } } }]),
+      User.countDocuments({ createdAt: { $gte: thirtyDaysAgo } }),
+      Client.countDocuments({ createdAt: { $gte: thirtyDaysAgo } }),
+      Job.countDocuments({ createdAt: { $gte: thirtyDaysAgo } }),
+      Application.countDocuments({ createdAt: { $gte: thirtyDaysAgo } }),
+      Job.aggregate([
+        { $match: { status: 'active' } },
+        { $group: { _id: '$category', count: { $sum: 1 } } },
+        { $sort: { count: -1 } },
+        { $limit: 5 }
+      ]),
+      Gig.aggregate([
+        { $match: { status: 'active' } },
+        { $group: { _id: '$category', count: { $sum: 1 } } },
+        { $sort: { count: -1 } },
+        { $limit: 5 }
+      ])
     ]);
 
     res.status(200).json({
@@ -699,6 +705,34 @@ export const deleteClient = async (req, res) => {
   }
 };
 
+export const sendBroadcast = async (req, res) => {
+  try {
+    const { message, audience } = req.body;
+    
+    if (!message) {
+      return res.status(400).json({ success: false, message: 'Message is required' });
+    }
+
+    const io = req.app.get('io');
+    if (!io) {
+      return res.status(500).json({ success: false, message: 'Socket server not initialized' });
+    }
+
+    if (audience === 'all') {
+      io.emit('global_broadcast', { message, type: 'info', time: new Date() });
+    } else if (audience === 'clients') {
+      io.to('client').emit('global_broadcast', { message, type: 'client_alert', time: new Date() });
+    } else if (audience === 'freelancers') {
+      io.to('user').emit('global_broadcast', { message, type: 'freelancer_alert', time: new Date() });
+    }
+
+    res.status(200).json({ success: true, message: 'Broadcast sent successfully' });
+  } catch (error) {
+    console.error('Broadcast error:', error);
+    res.status(500).json({ success: false, message: 'Failed to send broadcast', error: error.message });
+  }
+};
+
 export default {
   getAllUsers,
   getAllClients,
@@ -713,5 +747,6 @@ export default {
   approveGig,
   getAnalytics,
   deleteUser,
-  deleteClient
+  deleteClient,
+  sendBroadcast
 };

@@ -2,6 +2,8 @@ import { useEffect, useState, useRef } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { getCurrentUser } from './redux/slices/authSlice';
+import { io } from 'socket.io-client';
+import toast from 'react-hot-toast';
 
 // Layout Components
 import AIChatSupport from './components/ui/AIChatSupport';
@@ -25,7 +27,7 @@ import ApplyJob from './pages/user/ApplyJob';
 import MyApplications from './pages/user/MyApplications';
 import ResumeBuilder from './pages/user/ResumeBuilder';
 import ResumeAnalyzer from './pages/user/ResumeAnalyzer';
-import Profile from './pages/user/ProfileNew';
+import Profile from './pages/user/Profile';
 
 // Client Pages
 import ClientDashboard from './pages/client/Dashboard';
@@ -68,8 +70,8 @@ function App() {
         setIsAuthProcessing(false);
         setTimeout(() => {
           authWasHappening.current = false;
-        }, 1000); 
-      }, 1500); // reduced from 2500 for better responsiveness
+        }, 300); 
+      }, 600); // Reduced drastically from 1500ms for snappier experience
       return () => clearTimeout(timer);
     }
   }, [loading, isAuthProcessing]);
@@ -79,7 +81,9 @@ function App() {
     // Only show text preloader on normal navigation
     // AND only if we didn't just come from an auth animation
     if (!loading && !isAuthProcessing && !authWasHappening.current) {
-      setIsPreloaderVisible(true);
+      // Only trigger if navigation takes more than 100ms
+      const timer = setTimeout(() => setIsPreloaderVisible(true), 100);
+      return () => clearTimeout(timer);
     }
   }, [location.pathname, loading, isAuthProcessing]);
 
@@ -90,14 +94,78 @@ function App() {
     }
   }, [dispatch, token, user]);
 
+  // Global WebSocket Listener for Admin Broadcasts
+  useEffect(() => {
+    const socket = io('http://localhost:5000', {
+      withCredentials: true,
+    });
+
+    if (user && user.role) {
+      socket.emit('join_role_room', user.role);
+    } else {
+      socket.emit('join_role_room', 'all');
+    }
+
+    socket.on('global_broadcast', (data) => {
+      // Different styles based on target audience
+      let icon = '📢';
+      let bgColor = '#1e1b4b'; // Default dark purple
+      let textColor = '#fff';
+      let border = '1px solid #4f46e5'; // Indigo
+
+      if (data.type === 'client_alert') {
+        icon = '🏢';
+        bgColor = '#422006'; // Dark amber/gold
+        border = '1px solid #d97706';
+      } else if (data.type === 'freelancer_alert') {
+        icon = '🚀';
+        bgColor = '#082f49'; // Dark blue
+        border = '1px solid #0284c7';
+      }
+
+      toast.custom(
+        (t) => (
+          <div className={`${t.visible ? 'animate-enter' : 'animate-leave'} max-w-md w-full bg-[#0c0a1a] shadow-2xl rounded-2xl pointer-events-auto flex ring-1 ring-white/10`} style={{ border }}>
+            <div className="flex-1 w-0 p-4">
+              <div className="flex items-start">
+                <div className="flex-shrink-0 pt-0.5 text-2xl">
+                   {icon}
+                </div>
+                <div className="ml-3 flex-1">
+                  <p className="text-sm font-black text-white uppercase tracking-widest">
+                    SYSTEM BROADCAST
+                  </p>
+                  <p className="mt-1 text-sm text-gray-300">
+                    {data.message}
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="flex border-l border-white/10">
+              <button
+                onClick={() => toast.dismiss(t.id)}
+                className="w-full border border-transparent rounded-none rounded-r-2xl p-4 flex items-center justify-center text-sm font-bold text-electric-purple hover:text-white hover:bg-white/5 focus:outline-none transition-colors uppercase tracking-widest"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        ),
+        { duration: 10000, position: 'top-center' }
+      );
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, [user]);
+
   if (isAuthProcessing) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-[#030305] text-white overflow-hidden relative">
         {/* Background Data Stream Effect */}
-        <div className="absolute inset-0 z-0 opacity-20 pointer-events-none">
-          <div className="absolute left-1/4 top-0 w-[1px] h-full bg-gradient-to-b from-transparent via-electric-purple to-transparent animate-data-stream"></div>
-          <div className="absolute left-1/2 top-0 w-[1px] h-full bg-gradient-to-b from-transparent via-gold to-transparent animate-data-stream" style={{ animationDelay: '0.5s' }}></div>
-          <div className="absolute left-3/4 top-0 w-[1px] h-full bg-gradient-to-b from-transparent via-electric-purple to-transparent animate-data-stream" style={{ animationDelay: '1.2s' }}></div>
+        <div className="absolute inset-0 z-0 opacity-10 pointer-events-none">
+          <div className="absolute left-1/2 top-0 w-[1px] h-full bg-gradient-to-b from-transparent via-gold to-transparent animate-data-stream"></div>
         </div>
 
         <div className="relative z-10 flex flex-col items-center gap-12">

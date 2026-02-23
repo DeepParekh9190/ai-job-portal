@@ -15,7 +15,8 @@ import {
   approveGig,
   getAnalytics,
   deleteUser,
-  deleteClient
+  deleteClient,
+  sendBroadcast
 } from '../controllers/adminController.js';
 
 const router = express.Router();
@@ -129,7 +130,7 @@ router.get('/gigs', getAllGigsForApproval);
  */
 router.put('/gigs/:id/approve', approveGig);
 
-// ==================== ANALYTICS ====================
+// ==================== ANALYTICS & BROADCAST ====================
 
 /**
  * @route   GET /api/admin/analytics
@@ -137,5 +138,13 @@ router.put('/gigs/:id/approve', approveGig);
  * @access  Private (Admin only)
  */
 router.get('/analytics', getAnalytics);
+
+/**
+ * @route   POST /api/admin/broadcast
+ * @desc    Send a global websocket broadcast to users
+ * @access  Private (Admin only)
+ * @body    { message, audience }
+ */
+router.post('/broadcast', sendBroadcast);
 
 export default router;

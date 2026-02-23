@@ -38,7 +38,10 @@ DATA PRIVACY & ETHICS
         description: 'TechFlow India is a leading AI and machine learning company focused on building next-generation intelligent systems. We work with Fortune 500 companies to transform their businesses through AI.',
         industry: 'Artificial Intelligence',
         website: 'https://techflow.in'
-      }
+      },
+      name: 'Aditya Kumar',
+      role: 'Senior Recruiter',
+      avatar: 'https://ui-avatars.com/api/?name=AK&background=0D8ABC&color=fff'
     },
     createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
     applicants: new Array(47).fill(null)
@@ -71,7 +74,10 @@ We're looking for someone who is passionate about user-centered design and has a
         description: 'InnovateBharat is a product design and development studio creating world-class digital experiences for Indian and global markets.',
         industry: 'Design & Technology',
         website: 'https://innovatebharat.com'
-      }
+      },
+      name: 'Deep Parekh',
+      role: 'Design Manager',
+      avatar: 'https://ui-avatars.com/api/?name=DP&background=f59e0b&color=fff'
     },
     createdAt: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
     applicants: new Array(32).fill(null)
@@ -104,7 +110,10 @@ This role requires strong DevOps skills combined with ML knowledge. You'll work 
         description: 'DataSphere provides enterprise data science and ML solutions, helping companies leverage their data for competitive advantage.',
         industry: 'Data Science',
         website: 'https://datasphere.io'
-      }
+      },
+      name: 'Sneha Gupta',
+      role: 'Talent Acquisition Lead',
+      avatar: 'https://ui-avatars.com/api/?name=SG&background=10b981&color=fff'
     },
     createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
     applicants: new Array(28).fill(null)
@@ -137,7 +146,10 @@ We're looking for developers who are passionate about creating exceptional user 
         description: 'FutureScale is a fast-growing startup building the next generation of SaaS products for modern businesses.',
         industry: 'Software Development',
         website: 'https://futurescale.tech'
-      }
+      },
+      name: 'Rahul Sharma',
+      role: 'CTO',
+      avatar: 'https://ui-avatars.com/api/?name=RS&background=ec4899&color=fff'
     },
     createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
     applicants: new Array(56).fill(null)
@@ -222,7 +234,10 @@ As a ${jobData.title}, you will be at the forefront of innovation, working with 
         description: `${jobData.company} is a leading technology company focused on innovation and digital transformation. We work with top companies to build next-generation solutions.`,
         industry: 'Technology',
         website: `https://${jobData.company.toLowerCase().replace(/\s+/g, '')}.com`
-      }
+      },
+      name: 'Recruiting Team',
+      role: 'HR Department',
+      avatar: `https://ui-avatars.com/api/?name=${jobData.company.substring(0,2)}&background=random&color=fff`
     },
     createdAt: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString(),
     applicants: new Array(Math.floor(Math.random() * 60) + 20).fill(null),

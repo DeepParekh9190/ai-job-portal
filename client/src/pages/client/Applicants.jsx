@@ -11,7 +11,8 @@ import ResumePreview from '../../components/features/ResumePreview';
 import { formatDate, getStatusColor } from '../../utils/helpers';
 import { 
   ArrowLeft, 
-  User, 
+  User,
+  Users, 
   Eye, 
   CheckCircle, 
   XCircle, 
@@ -19,7 +20,8 @@ import {
   Sparkles,
   Download,
   Calendar,
-  Zap
+  Zap,
+  FileText
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -27,7 +29,7 @@ const Applicants = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const { applicants, loading: appsLoading } = useSelector((state) => state.applications);
+  const { applicants, loading: appsLoading } = useSelector((state) => state.application || state.applications || { applicants: []});
   const { currentJob, loading: jobLoading } = useSelector((state) => state.job);
   
   const [selectedApplicant, setSelectedApplicant] = useState(null);
@@ -59,8 +61,8 @@ const Applicants = () => {
         <div className="flex items-center gap-4">
           <div className="relative">
             <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-electric-purple/20 to-indigo-600/20 flex items-center justify-center text-electric-purple border border-white/10 overflow-hidden">
-               {row.applicant?.profilePicture ? (
-                 <img src={row.applicant.profilePicture} alt="" className="w-full h-full object-cover" />
+               {row.user?.profilePicture ? (
+                 <img src={row.user.profilePicture} alt="" className="w-full h-full object-cover" />
                ) : (
                  <User size={20} />
                )}
@@ -70,8 +72,8 @@ const Applicants = () => {
             }`}></div>
           </div>
           <div>
-            <div className="font-bold text-white text-base">{row.applicant?.name}</div>
-            <div className="text-[10px] font-black uppercase tracking-widest text-gray-500">{row.applicant?.email}</div>
+            <div className="font-bold text-white text-base">{row.user?.name || 'Unknown Candidate'}</div>
+            <div className="text-[10px] font-black uppercase tracking-widest text-gray-500">{row.user?.email || 'No email provided'}</div>
           </div>
         </div>
       )
@@ -79,23 +81,26 @@ const Applicants = () => {
     {
       header: 'AI MATCH SCORE',
       width: '20%',
-      render: (row) => (
+      render: (row) => {
+        const score = row.aiAnalysis?.matchScore || 0;
+        return (
          <div className="flex items-center gap-4">
             <div className="flex-grow bg-white/5 h-2 rounded-full overflow-hidden max-w-[100px] border border-white/5">
                 <div 
                   className={`h-full animate-width-expand ${
-                    row.matchScore >= 80 ? 'bg-green-400 shadow-[0_0_10px_rgba(74,222,128,0.4)]' : 
-                    row.matchScore >= 60 ? 'bg-gold shadow-[0_0_10px_rgba(251,191,36,0.4)]' : 'bg-red-400'
+                    score >= 80 ? 'bg-green-400 shadow-[0_0_10px_rgba(74,222,128,0.4)]' : 
+                    score >= 60 ? 'bg-gold shadow-[0_0_10px_rgba(251,191,36,0.4)]' : 'bg-red-400'
                   }`}
-                  style={{ width: `${row.matchScore || 0}%` }}
+                  style={{ width: `${score}%` }}
                 ></div>
             </div>
             <span className={`text-sm font-black ${
-               row.matchScore >= 80 ? 'text-green-400' : 
-               row.matchScore >= 60 ? 'text-gold' : 'text-red-400'
-            }`}>{row.matchScore || 0}%</span>
+               score >= 80 ? 'text-green-400' : 
+               score >= 60 ? 'text-gold' : 'text-red-400'
+            }`}>{score}%</span>
          </div>
-      )
+        );
+      }
     },
     {
       header: 'TRANSMISSION DATE',
@@ -103,7 +108,7 @@ const Applicants = () => {
       render: (row) => (
         <div className="flex items-center gap-2 text-gray-400">
            <Calendar size={12} />
-           <span className="text-xs font-bold uppercase tracking-tighter">{formatDate(row.createdAt)}</span>
+           <span className="text-xs font-bold uppercase tracking-tighter">{formatDate(row.submittedAt || row.createdAt)}</span>
         </div>
       )
     },
@@ -112,9 +117,9 @@ const Applicants = () => {
       width: '15%',
       render: (row) => (
         <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-[0.1em] border ${
-          row.status === 'pending' ? 'bg-yellow-500/10 border-yellow-500/20 text-yellow-500' :
-          row.status === 'interview' ? 'bg-blue-500/10 border-blue-500/20 text-blue-400' :
-          row.status === 'hired' ? 'bg-green-500/10 border-green-500/20 text-green-400' :
+          (row.status === 'submitted' || row.status === 'under-review') ? 'bg-yellow-500/10 border-yellow-500/20 text-yellow-500' :
+          (row.status === 'shortlisted' || row.status === 'interview' || row.status === 'offered') ? 'bg-blue-500/10 border-blue-500/20 text-blue-400' :
+          (row.status === 'accepted') ? 'bg-green-500/10 border-green-500/20 text-green-400' :
           'bg-red-500/10 border-red-500/20 text-red-400'
         }`}>
           {row.status}
@@ -196,7 +201,7 @@ const Applicants = () => {
              </div>
 
              <div className="flex flex-wrap gap-2 p-1.5 bg-white/5 rounded-2xl border border-white/10">
-               {['All', 'Pending', 'Interview', 'Rejected', 'Hired'].map(status => (
+               {['All', 'Submitted', 'Interview', 'Rejected', 'Accepted'].map(status => (
                  <button
                    key={status}
                    onClick={() => setFilterStatus(status)}
@@ -241,31 +246,32 @@ const Applicants = () => {
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center bg-white/5 p-6 rounded-2xl border border-white/10 gap-6">
                 <div className="flex items-center gap-5">
                   <div className="w-16 h-16 rounded-2xl bg-electric-purple flex items-center justify-center text-white text-2xl font-black shadow-[0_0_20px_rgba(168,85,247,0.4)]">
-                    {selectedApplicant.applicant?.name?.charAt(0)}
+                    {selectedApplicant.user?.name?.charAt(0) || 'U'}
                   </div>
                   <div>
-                    <h3 className="text-xl font-black text-white">{selectedApplicant.applicant?.name}</h3>
+                    <h3 className="text-xl font-black text-white">{selectedApplicant.user?.name || 'Unknown Candidate'}</h3>
                     <div className="flex items-center gap-3 mt-1">
                       <span className={`px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-widest border ${getStatusColor(selectedApplicant.status.toLowerCase())}`}>
                         {selectedApplicant.status}
                       </span>
                       <div className="flex items-center gap-1.5 text-xs text-gold font-black">
                         <Sparkles size={12} />
-                        {selectedApplicant.matchScore}% Match
+                        {selectedApplicant.aiAnalysis?.matchScore || 0}% Match
                       </div>
                     </div>
                   </div>
                 </div>
                 <div className="flex gap-3 w-full md:w-auto">
-                   <Button 
-                      className="flex-grow md:flex-grow-0 h-11 px-6 rounded-xl bg-white text-black font-bold text-xs uppercase tracking-widest"
+                   <Button
+                      variant="ghost"
+                      className="flex-grow md:flex-grow-0 h-11 px-6 rounded-xl bg-white !text-black font-bold text-xs uppercase tracking-widest hover:bg-gray-200"
                       onClick={() => handleStatusUpdate(selectedApplicant._id, 'interview')}
                     >
                       Process Shortlist
                    </Button>
                    <Button 
                       variant="danger"
-                      className="h-11 w-11 p-0 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 hover:bg-red-500"
+                      className="h-11 w-11 p-0 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 hover:bg-red-500 hover:text-white"
                       onClick={() => handleStatusUpdate(selectedApplicant._id, 'rejected')}
                     >
                       <XCircle size={18} />
@@ -277,7 +283,17 @@ const Applicants = () => {
               <div className="relative">
                 <div className="flex items-center justify-between mb-4">
                   <h4 className="text-sm font-black text-gray-400 uppercase tracking-widest">Experience Record</h4>
-                  <Button variant="ghost" className="text-gold text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
+                  <Button 
+                    variant="ghost" 
+                    className="text-gold text-[10px] font-black uppercase tracking-widest flex items-center gap-2"
+                    onClick={() => {
+                       if (selectedApplicant.resume?.url && !selectedApplicant.resume?.content) {
+                          window.open(selectedApplicant.resume.url, '_blank');
+                       } else {
+                          window.print();
+                       }
+                    }}
+                  >
                     <Download size={12} /> Extract PDF
                   </Button>
                 </div>

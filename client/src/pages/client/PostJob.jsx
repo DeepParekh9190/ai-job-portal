@@ -26,8 +26,16 @@ const PostJob = () => {
   
   const { register, control, handleSubmit, formState: { errors } } = useForm({
     defaultValues: {
-      requirements: { skills: [''] },
-      status: 'active'
+      requirements: { 
+        skills: [''],
+        experience: { min: 0 }
+      },
+      location: { type: 'remote' },
+      jobType: 'full-time',
+      category: 'Software Development',
+      education: 'Bachelor',
+      openings: 1,
+      status: 'pending'
     }
   });
 
@@ -39,19 +47,26 @@ const PostJob = () => {
   const onSubmit = async (data) => {
     try {
       const cleanedSkills = data.requirements.skills.filter(s => s.trim() !== '');
+      
+      // Calculate expiresAt (30 days after deadline)
+      const deadline = new Date(data.applicationDeadline);
+      const expiresAt = new Date(deadline);
+      expiresAt.setDate(expiresAt.getDate() + 30);
+
       const jobData = {
         ...data,
         requirements: {
           ...data.requirements,
-          skills: cleanedSkills
-        }
+          skills: cleanedSkills,
+          education: data.education
+        },
+        expiresAt: expiresAt.toISOString()
       };
       
       await dispatch(createJob(jobData)).unwrap();
-      toast.success('Job posted successfully! Awaiting admin approval.');
       navigate('/client/jobs');
     } catch (err) {
-      // toast.error is handled in slice
+      console.error("Post job error:", err);
     }
   };
 
@@ -61,6 +76,7 @@ const PostJob = () => {
         {/* Header */}
         <div className="mb-10 text-center relative">
           <button 
+            type="button"
             onClick={() => navigate(-1)} 
             className="absolute left-0 top-1/2 -translate-y-1/2 flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
           >
@@ -100,33 +116,33 @@ const PostJob = () => {
               />
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                   <label className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-2 block">Job Type</label>
-                   <select 
-                     {...register('jobType')}
-                     className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-gold transition-all appearance-none"
-                   >
-                     <option value="Full-time" className="bg-midnight-900 font-sans">Full-time</option>
-                     <option value="Part-time" className="bg-midnight-900 font-sans">Part-time</option>
-                     <option value="Contract" className="bg-midnight-900 font-sans">Contract</option>
-                     <option value="Freelance" className="bg-midnight-900 font-sans">Freelance</option>
-                     <option value="Internship" className="bg-midnight-900 font-sans">Internship</option>
-                   </select>
-                </div>
+                 <div className="space-y-2">
+                    <label className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-2 block">Category</label>
+                    <select 
+                      {...register('category')}
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-gold transition-all appearance-none"
+                    >
+                      {[
+                        'Software Development', 'Design', 'Marketing', 'Sales', 
+                        'Data Science', 'Product Management', 'Engineering', 'Other'
+                      ].map(cat => (
+                        <option key={cat} value={cat} className="bg-midnight-900">{cat}</option>
+                      ))}
+                    </select>
+                 </div>
 
-                <div className="space-y-2">
-                   <label className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-2 block">Experience Level</label>
-                   <select 
-                     {...register('experienceLevel')}
-                     className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-gold transition-all appearance-none"
-                   >
-                     <option value="Entry" className="bg-midnight-900 font-sans">Entry Level</option>
-                     <option value="Mid" className="bg-midnight-900 font-sans">Mid Level</option>
-                     <option value="Senior" className="bg-midnight-900 font-sans">Senior Level</option>
-                     <option value="Lead" className="bg-midnight-900 font-sans">Lead / Architect</option>
-                     <option value="Manager" className="bg-midnight-900 font-sans">Manager</option>
-                   </select>
-                </div>
+                 <div className="space-y-2">
+                    <label className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-2 block">Job Type</label>
+                    <select 
+                      {...register('jobType')}
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-gold transition-all appearance-none"
+                    >
+                      <option value="full-time" className="bg-midnight-900">Full-time</option>
+                      <option value="part-time" className="bg-midnight-900">Part-time</option>
+                      <option value="contract" className="bg-midnight-900">Contract</option>
+                      <option value="internship" className="bg-midnight-900">Internship</option>
+                    </select>
+                 </div>
               </div>
             </section>
 
@@ -138,22 +154,33 @@ const PostJob = () => {
                 </div>
                 <h3 className="text-lg font-bold text-white uppercase tracking-widest">Location & Compensation</h3>
               </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                 <Input
-                   label="City"
-                   placeholder="e.g. San Francisco"
-                   {...register('location.city', { required: 'City is required' })}
-                   error={errors.location?.city?.message}
-                   className="bg-white/5 border-white/10 text-white"
-                 />
-                 <Input
-                   label="Country"
-                   placeholder="e.g. USA"
-                   {...register('location.country', { required: 'Country is required' })}
-                   error={errors.location?.country?.message}
-                   className="bg-white/5 border-white/10 text-white"
-                 />
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-2 block">Location Type</label>
+                    <select 
+                      {...register('location.type')}
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-gold transition-all appearance-none"
+                    >
+                      <option value="remote" className="bg-midnight-900">Remote</option>
+                      <option value="onsite" className="bg-midnight-900">Onsite</option>
+                      <option value="hybrid" className="bg-midnight-900">Hybrid</option>
+                    </select>
+                  </div>
+                  <Input
+                    label="City"
+                    placeholder="e.g. San Francisco"
+                    {...register('location.city', { required: 'City is required' })}
+                    error={errors.location?.city?.message}
+                    className="bg-white/5 border-white/10 text-white"
+                  />
+                  <Input
+                    label="Country"
+                    placeholder="e.g. USA"
+                    {...register('location.country', { required: 'Country is required' })}
+                    error={errors.location?.country?.message}
+                    className="bg-white/5 border-white/10 text-white"
+                  />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6 bg-white/5 rounded-2xl border border-white/5">
@@ -190,7 +217,53 @@ const PostJob = () => {
                 <div className="w-8 h-8 rounded-lg bg-gold/20 flex items-center justify-center text-gold">
                   <Gem size={18} />
                 </div>
-                <h3 className="text-lg font-bold text-white uppercase tracking-widest">Detailed Profile</h3>
+                <h3 className="text-lg font-bold text-white uppercase tracking-widest">Job Requirements</h3>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                 <div className="space-y-2">
+                    <label className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-2 block">Min Experience (Years)</label>
+                    <Input
+                      type="number"
+                      {...register('requirements.experience.min', { required: 'Experience is required' })}
+                      error={errors.requirements?.experience?.min?.message}
+                      className="bg-white/5 border-white/10 text-white"
+                    />
+                 </div>
+                 <div className="space-y-2">
+                    <label className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-2 block">Education</label>
+                    <select 
+                      {...register('education')}
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-gold transition-all appearance-none"
+                    >
+                      <option value="Bachelor" className="bg-midnight-900">Bachelor</option>
+                      <option value="Master" className="bg-midnight-900">Master</option>
+                      <option value="PhD" className="bg-midnight-900">PhD</option>
+                      <option value="Associate" className="bg-midnight-900">Associate</option>
+                      <option value="Any" className="bg-midnight-900">Any</option>
+                    </select>
+                 </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                 <div className="space-y-2">
+                    <label className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-2 block">Application Deadline</label>
+                    <Input
+                      type="date"
+                      {...register('applicationDeadline', { required: 'Deadline is required' })}
+                      error={errors.applicationDeadline?.message}
+                      className="bg-white/5 border-white/10 text-white"
+                    />
+                 </div>
+                 <div className="space-y-2">
+                    <label className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-2 block">Openings</label>
+                    <Input
+                      type="number"
+                      {...register('openings', { required: 'Openings is required' })}
+                      error={errors.openings?.message}
+                      className="bg-white/5 border-white/10 text-white"
+                    />
+                 </div>
               </div>
               
               <div className="space-y-2">
@@ -205,7 +278,7 @@ const PostJob = () => {
               </div>
 
               <div className="space-y-4">
-                <label className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-2 block">Required Skills & DNA</label>
+                <label className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-2 block">Required Skills</label>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {fields.map((field, index) => (
                     <div key={field.id} className="flex gap-2 group">

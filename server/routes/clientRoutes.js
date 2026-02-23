@@ -22,6 +22,13 @@ import {
   updateMilestone,
   getGigStats
 } from '../controllers/gigController.js';
+import {
+  updateApplicationStatus,
+  addApplicationNotes,
+  scheduleInterview,
+  sendOffer,
+  rejectApplication
+} from '../controllers/applicationController.js';
 
 const router = express.Router();
 
@@ -156,5 +163,42 @@ router.put('/gigs/:id/milestones/:milestoneIndex', updateMilestone);
  * @access  Private (Client only)
  */
 router.get('/gigs/:id/stats', getGigStats);
+
+// ==================== APPLICATION ROUTES ====================
+
+/**
+ * @route   PUT /api/client/applications/:id/status
+ * @desc    Update application status
+ * @access  Private (Client only)
+ */
+router.put('/applications/:id/status', updateApplicationStatus);
+
+/**
+ * @route   PUT /api/client/applications/:id/notes
+ * @desc    Add notes to application
+ * @access  Private (Client only)
+ */
+router.put('/applications/:id/notes', addApplicationNotes);
+
+/**
+ * @route   PUT /api/client/applications/:id/interview
+ * @desc    Schedule interview
+ * @access  Private (Client only)
+ */
+router.put('/applications/:id/interview', scheduleInterview);
+
+/**
+ * @route   PUT /api/client/applications/:id/offer
+ * @desc    Send job offer
+ * @access  Private (Client only)
+ */
+router.put('/applications/:id/offer', sendOffer);
+
+/**
+ * @route   PUT /api/client/applications/:id/reject
+ * @desc    Reject application
+ * @access  Private (Client only)
+ */
+router.put('/applications/:id/reject', rejectApplication);
 
 export default router;
