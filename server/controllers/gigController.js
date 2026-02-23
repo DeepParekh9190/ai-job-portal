@@ -10,14 +10,69 @@ import Application from '../models/Application.js';
 export const createGig = async (req, res) => {
   try {
     const clientId = req.userId;
+    const data = { ...req.body };
 
-    // Create gig
-    const gig = await Gig.create({
-      ...req.body,
+    // Set missing fields to satisfy Mongoose schema validation
+    const applicationDeadline = data.deadline ? new Date(data.deadline) : new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
+    const startDate = new Date(applicationDeadline.getTime() + 7 * 24 * 60 * 60 * 1000); // 7 days after deadline
+    const expiresAt = new Date(startDate.getTime() + 30 * 24 * 60 * 60 * 1000); // 30 days after start
+
+    // Parse duration string like "3 Days" or "1 Week" into value/unit object
+    let durationValue = 1;
+    let durationUnit = 'weeks';
+    if (data.duration && typeof data.duration === 'string') {
+       const parts = data.duration.split(' ');
+       if (parts.length === 2 && !isNaN(parseInt(parts[0]))) {
+         durationValue = parseInt(parts[0]);
+         const rawUnit = parts[1].toLowerCase();
+         if (rawUnit.includes('hour')) durationUnit = 'hours';
+         else if (rawUnit.includes('day')) durationUnit = 'days';
+         else if (rawUnit.includes('month')) durationUnit = 'months';
+       }
+    } else if (data.duration && typeof data.duration === 'object') {
+       durationValue = data.duration.value || 1;
+       durationUnit = data.duration.unit || 'weeks';
+    }
+
+    // Map frontend categories to schema enums
+    const categoryMap = {
+      'Design': 'UI/UX Design',
+      'Development': 'Web Development',
+      'Writing': 'Content Writing',
+      'Marketing': 'Digital Marketing',
+      'AI Training': 'Other'
+    };
+    const finalCategory = categoryMap[data.category] || data.category || 'Other';
+
+    // Structure gig correctly
+    const gigPayload = {
+      title: data.title,
+      description: data.description,
+      category: finalCategory,
+      scope: data.scope || 'medium',
+      duration: {
+        value: durationValue,
+        unit: durationUnit,
+        isFlexible: true
+      },
+      budget: {
+        type: 'fixed',
+        amount: parseFloat(data.budget) || 100,
+        currency: 'USD',
+        negotiable: true
+      },
+      skills: data.skills && data.skills.length ? data.skills : ['Communication', 'Project Management'],
+      experienceLevel: data.experienceLevel || 'intermediate',
+      applicationDeadline,
+      startDate,
+      expiresAt,
       client: clientId,
       status: 'pending',
       approvalStatus: 'pending'
-    });
+    };
+
+    // Create gig
+    const gig = await Gig.create(gigPayload);
 
     // Update client stats
     const client = await Client.findById(clientId);
@@ -152,8 +207,14 @@ export const getMyGigs = async (req, res) => {
     const clientId = req.userId;
     const { status, page = 1, limit = 10 } = req.query;
 
-    const query = { client: clientId };
-    if (status) query.status = status;
+    const query = { client: clientId, status: { $ne: 'cancelled' } };
+    if (status) {
+      if (status === 'all') {
+         delete query.status; // Optional: allow passing 'all' to see everything
+      } else {
+         query.status = status;
+      }
+    }
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
@@ -200,22 +261,60 @@ export const updateGig = async (req, res) => {
     }
 
     // Check ownership
-    if (gig.client.toString() !== req.userId) {
+    if (gig.client.toString() !== req.userId.toString()) {
       return res.status(403).json({
         success: false,
         message: 'Not authorized to update this gig'
       });
     }
 
+    const data = { ...req.body };
+    let updatePayload = { ...data };
+
+    // Format fields if they are present in the update
+    if (data.deadline) {
+      updatePayload.applicationDeadline = new Date(data.deadline);
+      updatePayload.startDate = new Date(updatePayload.applicationDeadline.getTime() + 7 * 24 * 60 * 60 * 1000);
+      updatePayload.expiresAt = new Date(updatePayload.startDate.getTime() + 30 * 24 * 60 * 60 * 1000);
+    }
+
+    if (data.duration && typeof data.duration === 'string') {
+      const parts = data.duration.split(' ');
+      let durationValue = parseInt(parts[0]) || 1;
+      let durationUnit = 'weeks';
+      if (parts.length === 2) {
+         const rawUnit = parts[1].toLowerCase();
+         if (rawUnit.includes('hour')) durationUnit = 'hours';
+         else if (rawUnit.includes('day')) durationUnit = 'days';
+         else if (rawUnit.includes('month')) durationUnit = 'months';
+      }
+      updatePayload.duration = { value: durationValue, unit: durationUnit, isFlexible: true };
+    }
+
+    if (data.budget && typeof data.budget !== 'object') {
+       updatePayload.budget = { type: 'fixed', amount: parseFloat(data.budget) || 100, currency: 'USD', negotiable: true };
+    }
+    
+    if (data.category) {
+       const categoryMap = {
+          'Design': 'UI/UX Design',
+          'Development': 'Web Development',
+          'Writing': 'Content Writing',
+          'Marketing': 'Digital Marketing',
+          'AI Training': 'Other'
+       };
+       updatePayload.category = categoryMap[data.category] || data.category;
+    }
+
     // Don't allow updates to approved gigs without re-approval
     if (gig.approvalStatus === 'approved') {
-      req.body.approvalStatus = 'pending';
-      req.body.status = 'pending';
+      updatePayload.approvalStatus = 'pending';
+      updatePayload.status = 'pending';
     }
 
     const updatedGig = await Gig.findByIdAndUpdate(
       req.params.id,
-      req.body,
+      updatePayload,
       { new: true, runValidators: true }
     );
 
@@ -251,7 +350,7 @@ export const deleteGig = async (req, res) => {
     }
 
     // Check ownership
-    if (gig.client.toString() !== req.userId) {
+    if (gig.client.toString() !== req.userId.toString()) {
       return res.status(403).json({
         success: false,
         message: 'Not authorized to delete this gig'
@@ -300,7 +399,7 @@ export const getGigProposals = async (req, res) => {
       });
     }
 
-    if (gig.client.toString() !== req.userId) {
+    if (gig.client.toString() !== req.userId.toString()) {
       return res.status(403).json({
         success: false,
         message: 'Not authorized to view these proposals'
@@ -374,7 +473,7 @@ export const assignGig = async (req, res) => {
       });
     }
 
-    if (gig.client.toString() !== req.userId) {
+    if (gig.client.toString() !== req.userId.toString()) {
       return res.status(403).json({
         success: false,
         message: 'Not authorized'
@@ -423,7 +522,7 @@ export const markGigCompleted = async (req, res) => {
       });
     }
 
-    if (gig.client.toString() !== req.userId) {
+    if (gig.client.toString() !== req.userId.toString()) {
       return res.status(403).json({
         success: false,
         message: 'Not authorized'
@@ -473,7 +572,7 @@ export const updateMilestone = async (req, res) => {
       });
     }
 
-    if (gig.client.toString() !== req.userId) {
+    if (gig.client.toString() !== req.userId.toString()) {
       return res.status(403).json({
         success: false,
         message: 'Not authorized'
@@ -522,7 +621,7 @@ export const getGigStats = async (req, res) => {
       });
     }
 
-    if (gig.client.toString() !== req.userId) {
+    if (gig.client.toString() !== req.userId.toString()) {
       return res.status(403).json({
         success: false,
         message: 'Not authorized'

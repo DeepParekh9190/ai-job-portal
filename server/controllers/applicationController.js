@@ -24,7 +24,7 @@ export const updateApplicationStatus = async (req, res) => {
     }
 
     // Check if client owns the job/gig
-    if (application.client.toString() !== req.userId) {
+    if (application.client.toString() !== req.userId.toString()) {
       return res.status(403).json({
         success: false,
         message: 'Not authorized to update this application'
@@ -81,7 +81,7 @@ export const addApplicationNotes = async (req, res) => {
       });
     }
 
-    if (application.client.toString() !== req.userId) {
+    if (application.client.toString() !== req.userId.toString()) {
       return res.status(403).json({
         success: false,
         message: 'Not authorized'
@@ -126,7 +126,7 @@ export const scheduleInterview = async (req, res) => {
       });
     }
 
-    if (application.client.toString() !== req.userId) {
+    if (application.client.toString() !== req.userId.toString()) {
       return res.status(403).json({
         success: false,
         message: 'Not authorized'
@@ -182,7 +182,7 @@ export const completeInterview = async (req, res) => {
       });
     }
 
-    if (application.client.toString() !== req.userId) {
+    if (application.client.toString() !== req.userId.toString()) {
       return res.status(403).json({
         success: false,
         message: 'Not authorized'
@@ -233,7 +233,7 @@ export const sendOffer = async (req, res) => {
       });
     }
 
-    if (application.client.toString() !== req.userId) {
+    if (application.client.toString() !== req.userId.toString()) {
       return res.status(403).json({
         success: false,
         message: 'Not authorized'
@@ -286,7 +286,7 @@ export const rejectApplication = async (req, res) => {
       });
     }
 
-    if (application.client.toString() !== req.userId) {
+    if (application.client.toString() !== req.userId.toString()) {
       return res.status(403).json({
         success: false,
         message: 'Not authorized'

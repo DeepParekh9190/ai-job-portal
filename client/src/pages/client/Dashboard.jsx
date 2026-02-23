@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { getMyJobs } from '../../redux/slices/jobSlice';
 import { Link } from 'react-router-dom';
@@ -21,6 +21,7 @@ import Button from '../../components/common/Button';
 import Loader from '../../components/common/Loader';
 import { formatSalary, getRelativeTime } from '../../utils/helpers';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
+import toast from 'react-hot-toast';
 
 // Mock chart data
 const statsData = [
@@ -37,10 +38,26 @@ const ClientDashboard = () => {
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
   const { myJobs, loading } = useSelector((state) => state.job);
+  const [isAiActive, setIsAiActive] = useState(false);
+  const [aiLoading, setAiLoading] = useState(false);
 
   useEffect(() => {
     dispatch(getMyJobs());
   }, [dispatch]);
+
+  const handleActivateAi = () => {
+    setAiLoading(true);
+    toast('Initializing AI Sourcing Agents...', {
+      icon: '🤖',
+      style: { background: '#1e1b4b', color: '#fff' }
+    });
+    
+    setTimeout(() => {
+      setAiLoading(false);
+      setIsAiActive(true);
+      toast.success('AI Agent Successfully Activated! Now sourcing in background.');
+    }, 1500);
+  };
 
   const stats = [
     { 
@@ -88,7 +105,7 @@ const ClientDashboard = () => {
           </div>
           <div className="flex gap-4">
             <Link to="/client/post-job">
-              <Button className="bg-white text-black hover:bg-gray-200 border-none font-bold px-6 h-12 rounded-xl flex items-center gap-2">
+              <Button className="font-bold px-6 h-12 rounded-xl flex items-center gap-2 shadow-lg shadow-electric-purple/20">
                 <Plus size={18} /> Post Job
               </Button>
             </Link>
@@ -130,12 +147,19 @@ const ClientDashboard = () => {
                     <Sparkles className="text-white" size={24} />
                  </div>
                  <div>
-                    <h4 className="text-white font-bold text-lg">AI Talent Recommendation</h4>
-                    <p className="text-gray-400 text-sm">We've found <span className="text-white font-bold">5 candidates</span> matching your "Senior React Dev" requirements with 95%+ DNA compatibility.</p>
+                    <h4 className="text-white font-bold text-lg">Ai talent recommendation Need specialized help?</h4>
+                    <p className="text-gray-400 text-sm">Our AI recruiting agents can help you source candidates while you sleep.</p>
                  </div>
               </div>
-              <Button variant="outline" className="border-electric-purple/30 text-electric-purple hover:bg-electric-purple hover:text-white rounded-xl px-6">
-                Review Matches
+              <Button 
+                variant={isAiActive ? 'solid' : 'outline'}
+                onClick={handleActivateAi}
+                disabled={isAiActive || aiLoading}
+                className={isAiActive 
+                  ? "bg-green-500/20 text-green-400 border-none rounded-xl px-6 font-bold tracking-widest cursor-default" 
+                  : "border-electric-purple/30 text-electric-purple hover:bg-electric-purple hover:text-white rounded-xl px-6 font-bold tracking-widest"}
+              >
+                {aiLoading ? 'INITIALIZING...' : isAiActive ? 'AGENT ACTIVE' : 'ACTIVATE AI AGENT'}
               </Button>
            </div>
         </div>
@@ -217,8 +241,14 @@ const ClientDashboard = () => {
                 <div className="relative z-10">
                   <h4 className="text-white font-bold mb-2">Need specialized help?</h4>
                   <p className="text-xs text-gray-500 mb-6">Our AI recruiting agents can help you source candidates while you sleep.</p>
-                  <Button className="w-full bg-electric-purple text-white border-none py-6 rounded-2xl font-black tracking-widest text-xs shadow-lg shadow-electric-purple/20">
-                    ACTIVATE AI AGENT
+                  <Button 
+                    onClick={handleActivateAi}
+                    disabled={isAiActive || aiLoading}
+                    className={isAiActive 
+                      ? "w-full bg-green-500/20 text-green-400 border-none py-6 rounded-2xl font-black tracking-widest text-xs cursor-default" 
+                      : "w-full bg-electric-purple text-white border-none py-6 rounded-2xl font-black tracking-widest text-xs shadow-lg shadow-electric-purple/20 hover:bg-purple-600 transition-colors"}
+                  >
+                    {aiLoading ? 'INITIALIZING...' : isAiActive ? 'AGENT ACTIVE' : 'ACTIVATE AI AGENT'}
                   </Button>
                 </div>
                 <Sparkles className="absolute -right-8 -bottom-8 w-32 h-32 text-electric-purple opacity-5" />

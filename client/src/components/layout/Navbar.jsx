@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { logout } from '../../redux/slices/authSlice';
-import { Menu, X, User, LogOut, ChevronDown, LayoutDashboard, Settings, Briefcase, FileText } from 'lucide-react';
+import { Menu, X, User, Users, Building2, LogOut, ChevronDown, LayoutDashboard, Settings, Briefcase, FileText, ShieldCheck } from 'lucide-react';
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -92,13 +92,41 @@ const Navbar = () => {
                         Dashboard
                       </Link>
 
-                      <Link 
-                        to="/user/resume-builder"
-                        className="flex items-center gap-3 px-3 py-2.5 text-sm text-gray-300 hover:text-white hover:bg-white/5 rounded-xl transition-colors"
-                      >
-                        <FileText size={18} className="text-green-400" />
-                        Resume Builder
-                      </Link>
+                      {user?.role === 'admin' && (
+                        <>
+                          <Link 
+                            to="/admin/users"
+                            className="flex items-center gap-3 px-3 py-2.5 text-sm text-gray-300 hover:text-white hover:bg-white/5 rounded-xl transition-colors"
+                          >
+                            <Users size={18} className="text-electric-purple" />
+                            Manage Accounts
+                          </Link>
+                          <Link 
+                            to="/admin/clients"
+                            className="flex items-center gap-3 px-3 py-2.5 text-sm text-gray-300 hover:text-white hover:bg-white/5 rounded-xl transition-colors"
+                          >
+                            <Building2 size={18} className="text-gold" />
+                            Manage Companies
+                          </Link>
+                          <Link 
+                            to="/admin/jobs"
+                            className="flex items-center gap-3 px-3 py-2.5 text-sm text-gray-300 hover:text-white hover:bg-white/5 rounded-xl transition-colors"
+                          >
+                            <ShieldCheck size={18} className="text-emerald-500" />
+                            Approve Jobs
+                          </Link>
+                        </>
+                      )}
+
+                      {user?.role === 'user' && (
+                        <Link 
+                          to="/user/resume-builder"
+                          className="flex items-center gap-3 px-3 py-2.5 text-sm text-gray-300 hover:text-white hover:bg-white/5 rounded-xl transition-colors"
+                        >
+                          <FileText size={18} className="text-green-400" />
+                          Resume Builder
+                        </Link>
+                      )}
                       
                       <Link 
                         to={`/${user?.role || 'user'}/profile`}

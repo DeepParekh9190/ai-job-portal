@@ -90,10 +90,46 @@ export const applyForJob = async (req, res) => {
         url: resume.file?.url,
         filename: resume.file?.filename,
         content: resume.type === 'ai-generated' ? JSON.stringify(resume) : null
-      } : null,
-      expectedSalary,
-      availability,
-      aiAnalysis,
+      } : {
+        type: 'generated',
+        url: user?.profile?.resumeUrl || '',
+        filename: `${user?.name || 'Candidate'}-Profile.pdf`
+      },
+      expectedSalary: {
+        amount: parseInt(expectedSalary?.amount) || 0,
+        currency: expectedSalary?.currency || 'INR',
+        period: expectedSalary?.period || 'yearly'
+      },
+      availability: {
+        startDate: availability?.startDate || new Date(),
+        noticePeriod: {
+          value: parseInt(availability?.noticePeriod?.value) || 30,
+          unit: availability?.noticePeriod?.unit || 'days'
+        }
+      },
+      aiAnalysis: {
+        matchScore: aiAnalysis?.overallScore || 0,
+        skillsMatch: {
+          matched: aiAnalysis?.breakdown?.skills?.matched || [],
+          missing: aiAnalysis?.breakdown?.skills?.missing || [],
+          additional: aiAnalysis?.breakdown?.skills?.additional || [],
+          score: aiAnalysis?.breakdown?.skills?.score || 0
+        },
+        experienceMatch: {
+          required: aiAnalysis?.breakdown?.experience?.required || 0,
+          applicant: aiAnalysis?.breakdown?.experience?.candidate || 0,
+          score: aiAnalysis?.breakdown?.experience?.score || 0
+        },
+        educationMatch: {
+          required: aiAnalysis?.breakdown?.education?.required || 'N/A',
+          applicant: aiAnalysis?.breakdown?.education?.candidate || 'N/A',
+          score: aiAnalysis?.breakdown?.education?.score || 0
+        },
+        overallAnalysis: aiAnalysis?.detailedAnalysis || '',
+        strengths: aiAnalysis?.strengths || [],
+        concerns: aiAnalysis?.concerns || [],
+        recommendations: Array.isArray(aiAnalysis?.recommendation) ? aiAnalysis.recommendation : [aiAnalysis?.recommendation].filter(Boolean)
+      },
       status: 'submitted',
       submittedAt: new Date()
     });
@@ -102,8 +138,10 @@ export const applyForJob = async (req, res) => {
     await job.incrementApplications();
 
     // Update user stats
-    user.totalApplications = (user.totalApplications || 0) + 1;
-    await user.save();
+    if (user) {
+      user.totalApplications = (user.totalApplications || 0) + 1;
+      await user.save();
+    }
 
     // Update resume stats
     if (resume) {
@@ -121,13 +159,13 @@ export const applyForJob = async (req, res) => {
       success: true,
       message: 'Application submitted successfully',
       application,
-      matchScore: aiAnalysis?.overallScore
+      matchScore: aiAnalysis?.overallScore || 0
     });
   } catch (error) {
     console.error('Apply for Job Error:', error);
     res.status(500).json({
       success: false,
-      message: 'Error submitting application',
+      message: error.name === 'ValidationError' ? `Validation Error: ${error.message}` : 'Error submitting application',
       error: error.message
     });
   }
@@ -301,6 +339,9 @@ export const getMyApplications = async (req, res) => {
 
     const total = await Application.countDocuments(query);
 
+    // Get user object for stats aggregation
+    const user = await User.findById(userId);
+
     // Get statistics
     const stats = await Application.aggregate([
       { $match: { user: user._id } },
@@ -311,9 +352,6 @@ export const getMyApplications = async (req, res) => {
         }
       }
     ]);
-
-    // Get user object for stats aggregation
-    const user = await User.findById(userId);
 
     res.status(200).json({
       success: true,
@@ -517,52 +555,55 @@ export const getUserDashboard = async (req, res) => {
   try {
     const userId = req.userId;
 
-    // Get user profile
-    const user = await User.findById(userId);
-
-    // Get application statistics
-    const applicationStats = await Application.aggregate([
-      { $match: { user: user._id } },
-      {
-        $group: {
-          _id: '$status',
-          count: { $sum: 1 }
+    // Parallelize all independent queries for faster dashboard load
+    const [
+      user,
+      applicationStats,
+      recentApplications,
+      resumeCount,
+      primaryResume,
+      totalApplications,
+      respondedApplications,
+      avgMatchResult
+    ] = await Promise.all([
+      User.findById(userId),
+      Application.aggregate([
+        { $match: { user: userId } },
+        {
+          $group: {
+            _id: '$status',
+            count: { $sum: 1 }
+          }
         }
-      }
+      ]),
+      Application.find({ user: userId })
+        .populate('job', 'title company location')
+        .populate('gig', 'title budget')
+        .populate('client', 'name company')
+        .sort('-submittedAt')
+        .limit(5),
+      Resume.countDocuments({ user: userId, isActive: true }),
+      Resume.findOne({ user: userId, isPrimary: true }),
+      Application.countDocuments({ user: userId }),
+      Application.countDocuments({
+        user: userId,
+        status: { $in: ['interview', 'offered', 'accepted', 'rejected'] }
+      }),
+      Application.aggregate([
+        { $match: { user: userId, 'aiAnalysis.overallScore': { $exists: true } } },
+        {
+          $group: {
+            _id: null,
+            avgScore: { $avg: '$aiAnalysis.overallScore' }
+          }
+        }
+      ])
     ]);
 
-    // Get recent applications
-    const recentApplications = await Application.find({ user: userId })
-      .populate('job', 'title company location')
-      .populate('gig', 'title budget')
-      .populate('client', 'name company')
-      .sort('-submittedAt')
-      .limit(5);
-
-    // Get resume statistics
-    const resumeCount = await Resume.countDocuments({ user: userId, isActive: true });
-    const primaryResume = await Resume.findOne({ user: userId, isPrimary: true });
-
-    // Get application response rate
-    const totalApplications = await Application.countDocuments({ user: userId });
-    const respondedApplications = await Application.countDocuments({
-      user: userId,
-      status: { $in: ['interview', 'offered', 'accepted', 'rejected'] }
-    });
     const responseRate = totalApplications > 0 
       ? Math.round((respondedApplications / totalApplications) * 100) 
       : 0;
 
-    // Get average match score
-    const avgMatchResult = await Application.aggregate([
-      { $match: { user: user._id, 'aiAnalysis.overallScore': { $exists: true } } },
-      {
-        $group: {
-          _id: null,
-          avgScore: { $avg: '$aiAnalysis.overallScore' }
-        }
-      }
-    ]);
     const averageMatchScore = avgMatchResult.length > 0 
       ? Math.round(avgMatchResult[0].avgScore) 
       : 0;

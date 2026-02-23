@@ -80,13 +80,12 @@ Return ONLY this JSON structure:
   "detailedAnalysis": "brief paragraph explaining the match"
 }`;
 
-  const response = await callAI(prompt, systemPrompt, 3000);
-  
   try {
+    const response = await callAI(prompt, systemPrompt, 3000);
     let cleanResponse = response.trim().replace(/```json\n?/g, '').replace(/```\n?/g, '');
     return JSON.parse(cleanResponse);
   } catch (error) {
-    console.error('Error calculating job match:', error);
+    console.error('AI Job Match Error (falling back to basic match):', error.message);
     // Fallback to basic matching if AI fails
     return calculateBasicMatch(candidateProfile, jobPosting);
   }

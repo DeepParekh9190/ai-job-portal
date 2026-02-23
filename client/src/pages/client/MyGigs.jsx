@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom';
-import { getMyGigs, deleteJob } from '../../redux/slices/jobSlice'; // Should probably use deleteGig if it exists
+import { getMyGigs, deleteGig } from '../../redux/slices/jobSlice';
 import DataTable from '../../components/features/DataTable';
 import Button from '../../components/common/Button';
 import Card from '../../components/common/Card';
@@ -33,13 +33,7 @@ const MyGigs = () => {
   const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this gig?')) {
       try {
-        // Assuming deleteJob can handle gigs or there's a deleteGig
-        // Based on jobSlice.js, there is no deleteGig fulfilled case that updates myGigs.
-        // Wait, let's check jobSlice again.
-        // Line 107 in jobSlice.js: export const deleteJob = ...
-        // It seems gig deletion might be missing or handled by deleteJob.
-        // I'll check jobSlice.js again to be sure.
-        await dispatch(deleteJob(id)).unwrap(); 
+        await dispatch(deleteGig(id)).unwrap(); 
         toast.success('Gig deleted successfully');
         dispatch(getMyGigs({ page: 1 })); // Refresh
       } catch (error) {
@@ -66,10 +60,10 @@ const MyGigs = () => {
           <span className="font-bold text-white text-base">{row.title}</span>
           <div className="flex items-center gap-3 mt-1 text-xs text-gray-400">
             <span className="flex items-center gap-1">
-              <Clock size={12} /> {row.duration || 'Flexible'}
+              <Clock size={12} /> {typeof row.duration === 'object' ? `${row.duration.value} ${row.duration.unit}` : (row.duration || 'Flexible')}
             </span>
             <span className="flex items-center gap-1 text-gold">
-              <DollarSign size={12} /> {row.budget}
+              <DollarSign size={12} /> {typeof row.budget === 'object' ? row.budget.amount : row.budget}
             </span>
           </div>
         </div>
@@ -172,7 +166,7 @@ const MyGigs = () => {
               <div className="relative z-10">
                 <p className="text-xs text-gold uppercase font-black tracking-[0.2em] mb-1">Total Budgeted</p>
                 <h3 className="text-4xl font-black text-white">
-                  ${myGigs.reduce((acc, gig) => acc + (parseFloat(gig.budget) || 0), 0).toLocaleString()}
+                  ${myGigs.reduce((acc, gig) => acc + (typeof gig.budget === 'object' ? parseFloat(gig.budget.amount) : parseFloat(gig.budget) || 0), 0).toLocaleString()}
                 </h3>
               </div>
               <DollarSign className="absolute -right-4 -bottom-4 w-32 h-32 text-white/5 -rotate-12" />

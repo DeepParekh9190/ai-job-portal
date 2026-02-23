@@ -26,17 +26,17 @@ const Preloader = ({ onComplete }) => {
     tl.to(".preloader-char", {
       y: 0,
       opacity: 1,
-      duration: 0.5, // Faster entry
-      stagger: 0.05,
+      duration: 0.3, // Faster entry
+      stagger: 0.03,
       ease: "power4.out"
     })
     .to(".preloader-char", {
       y: -100,
       opacity: 0,
-      duration: 0.4, // Faster exit
-      stagger: 0.02,
+      duration: 0.3, // Faster exit
+      stagger: 0.01,
       ease: "power2.in",
-      delay: 0.2 // Less delay before exit
+      delay: 0.1 // Minimal delay before exit
     });
 
     return () => tl.kill();

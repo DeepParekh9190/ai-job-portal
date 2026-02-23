@@ -6,6 +6,7 @@ import morgan from 'morgan';
 import compression from 'compression';
 import connectDB from './config/db.js';
 import mongoose from 'mongoose';
+import { Server } from 'socket.io';
 
 // Import routes
 import authRoutes from './routes/authRoutes.js';
@@ -173,23 +174,32 @@ const server = app.listen(PORT, () => {
   console.log(`✅ API Base URL: http://localhost:${PORT}/api`);
   console.log(`✅ Health Check: http://localhost:${PORT}/health`);
   console.log('========================================');
-  console.log('');
-  console.log('📋 Available Routes:');
-  console.log('  - POST   /api/auth/register/user');
-  console.log('  - POST   /api/auth/register/client');
-  console.log('  - POST   /api/auth/login');
-  console.log('  - GET    /api/auth/me');
-  console.log('  - GET    /api/user/jobs');
-  console.log('  - POST   /api/user/jobs/:id/apply');
-  console.log('  - POST   /api/client/jobs');
-  console.log('  - GET    /api/client/jobs/:id/applicants');
-  console.log('  - POST   /api/ai/generate-resume');
-  console.log('  - POST   /api/ai/analyze-resume');
-  console.log('  - POST   /api/ai/match-job');
-  console.log('  - GET    /api/admin/analytics');
-  console.log('========================================');
-  console.log('');
-}).on('error', (err) => {
+});
+
+// Configure Socket.io
+const io = new Server(server, {
+  cors: {
+    origin: [
+      process.env.CLIENT_URL || 'http://localhost:5173',
+      'http://127.0.0.1:5173'
+    ],
+    credentials: true,
+  },
+});
+
+io.on('connection', (socket) => {
+  // Join a room based on the user's role: 'all', 'user', 'client', or 'admin'
+  socket.on('join_role_room', (role) => {
+    socket.join('all'); // Everyone joins the 'all' room
+    if (role === 'user' || role === 'client' || role === 'admin') {
+      socket.join(role);
+    }
+  });
+});
+
+app.set('io', io);
+
+server.on('error', (err) => {
   if (err.code === 'EADDRINUSE') {
     console.error(`\n❌ ERROR: Port ${PORT} is already in use.`);
     console.error('💡 This usually means another instance of the server is already running.');

@@ -22,12 +22,12 @@ export const createJob = async (req, res) => {
       });
     }
 
-    // Create job
+    // Create job (Auto-approved for now based on user request)
     const job = await Job.create({
       ...req.body,
       client: clientId,
-      status: 'pending',
-      approvalStatus: 'pending'
+      status: 'active',
+      approvalStatus: 'approved'
     });
 
     // Update client stats and quota
@@ -38,7 +38,7 @@ export const createJob = async (req, res) => {
 
     res.status(201).json({
       success: true,
-      message: 'Job created successfully. Awaiting admin approval.',
+      message: 'Job created and posted successfully.',
       job
     });
   } catch (error) {
@@ -211,7 +211,7 @@ export const updateJob = async (req, res) => {
     }
 
     // Check ownership
-    if (job.client.toString() !== req.userId) {
+    if (job.client.toString() !== req.userId.toString()) {
       return res.status(403).json({
         success: false,
         message: 'Not authorized to update this job'
@@ -262,7 +262,7 @@ export const deleteJob = async (req, res) => {
     }
 
     // Check ownership
-    if (job.client.toString() !== req.userId) {
+    if (job.client.toString() !== req.userId.toString()) {
       return res.status(403).json({
         success: false,
         message: 'Not authorized to delete this job'
@@ -311,7 +311,7 @@ export const getJobApplicants = async (req, res) => {
       });
     }
 
-    if (job.client.toString() !== req.userId) {
+    if (job.client.toString() !== req.userId.toString()) {
       return res.status(403).json({
         success: false,
         message: 'Not authorized to view these applicants'
@@ -382,7 +382,7 @@ export const closeJob = async (req, res) => {
       });
     }
 
-    if (job.client.toString() !== req.userId) {
+    if (job.client.toString() !== req.userId.toString()) {
       return res.status(403).json({
         success: false,
         message: 'Not authorized to close this job'
@@ -428,7 +428,7 @@ export const markJobFilled = async (req, res) => {
       });
     }
 
-    if (job.client.toString() !== req.userId) {
+    if (job.client.toString() !== req.userId.toString()) {
       return res.status(403).json({
         success: false,
         message: 'Not authorized'
@@ -477,7 +477,7 @@ export const getJobStats = async (req, res) => {
       });
     }
 
-    if (job.client.toString() !== req.userId) {
+    if (job.client.toString() !== req.userId.toString()) {
       return res.status(403).json({
         success: false,
         message: 'Not authorized'

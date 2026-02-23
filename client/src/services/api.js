@@ -36,8 +36,13 @@ api.interceptors.response.use(
 
       if (status === 401) {
         // Unauthorized - clear token and redirect to login
-        // Only redirect if it's NOT the 'me' endpoint (to let authSlice handle it)
-        if (!error.config.url.includes('/auth/me')) {
+        // Don't redirect if we're already trying to login/register or checking current user
+        const isAuthRequest = 
+          error.config.url.includes('/auth/login') || 
+          error.config.url.includes('/auth/register') || 
+          error.config.url.includes('/auth/me');
+
+        if (!isAuthRequest) {
           localStorage.removeItem('token');
           localStorage.removeItem('user');
           window.location.href = '/login';

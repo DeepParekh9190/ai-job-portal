@@ -45,7 +45,7 @@ const applicationSchema = new mongoose.Schema({
   resume: {
     type: {
       type: String,
-      enum: ['uploaded', 'generated'],
+      enum: ['uploaded', 'generated', 'ai-generated'],
       required: true
     },
     url: String,

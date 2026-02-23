@@ -202,6 +202,50 @@ const aiSlice = createSlice({
       .addCase(getRecommendedJobs.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
+      })
+      // Generate Summary
+      .addCase(generateSummary.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(generateSummary.fulfilled, (state) => {
+        state.loading = false;
+      })
+      .addCase(generateSummary.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      // Generate Job Description
+      .addCase(generateJobDescription.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(generateJobDescription.fulfilled, (state) => {
+        state.loading = false;
+      })
+      .addCase(generateJobDescription.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      // Improve Section
+      .addCase(improveSection.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(improveSection.fulfilled, (state) => {
+        state.loading = false;
+      })
+      .addCase(improveSection.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      // Generate Cover Letter
+      .addCase(generateCoverLetter.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(generateCoverLetter.fulfilled, (state) => {
+        state.loading = false;
+      })
+      .addCase(generateCoverLetter.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
       });
   },
 });
