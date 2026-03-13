@@ -1,9 +1,9 @@
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
-import User from './models/User.js';
-import Client from './models/Client.js';
-import Job from './models/Job.js';
-import connectDB from './config/db.js';
+import User from '../models/User.js';
+import Client from '../models/Client.js';
+import Job from '../models/Job.js';
+import connectDB from '../config/db.js';
 
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -11,7 +11,7 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-dotenv.config({ path: path.join(__dirname, '.env') });
+dotenv.config({ path: path.join(__dirname, '../.env') });
 
 const seedData = async () => {
   try {
