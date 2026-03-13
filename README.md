@@ -194,7 +194,7 @@ TalentorAI bridges the gap between **job seekers**, **employers**, and **adminis
   </tr>
   <tr>
     <td><b>🧠 AI</b></td>
-    <td><img src="https://img.shields.io/badge/-Anthropic_Claude-191919?style=flat-square" /> / <img src="https://img.shields.io/badge/-OpenAI-412991?style=flat-square&logo=openai&logoColor=white" /></td>
+    <td><img src="https://img.shields.io/badge/-Google_Gemini-4285F4?style=flat-square&logo=google&logoColor=white" /> / <img src="https://img.shields.io/badge/-Anthropic_Claude-191919?style=flat-square" /> / <img src="https://img.shields.io/badge/-OpenAI-412991?style=flat-square&logo=openai&logoColor=white" /></td>
     <td>Resume generation, analysis & job matching</td>
   </tr>
 </table>
@@ -242,7 +242,9 @@ JWT_SECRET=your_super_secret_key_here
 JWT_EXPIRE=30d
 
 # ─── AI Provider (pick one) ─────────────────────────
-ANTHROPIC_API_KEY=sk-ant-xxxxxxxxxxxxx
+AI_PROVIDER=google
+GOOGLE_API_KEY=your_google_api_key_here
+# ANTHROPIC_API_KEY=sk-ant-xxxxxxxxxxxxx
 # OPENAI_API_KEY=sk-xxxxxxxxxxxxx
 
 # ─── App Config ─────────────────────────────────────
