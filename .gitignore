@@ -32,3 +32,17 @@ yarn-error.log*
 *.njsproj
 *.sln
 *.sw?
+
+# Build output
+client/dist/
+
+# Credentials & secrets
+credentials.md
+*.env
+
+# Temporary utility scripts
+format_docx.py
+take_screenshots.js
+
+# Project reports (keep in Google Drive, not repo)
+PROJECT_REPORT*.docx
