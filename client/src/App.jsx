@@ -96,6 +96,12 @@ function App() {
 
   // Global WebSocket Listener for Admin Broadcasts
   useEffect(() => {
+    // ONLY connect to socket in development to avoid console errors in Vercel
+    if (import.meta.env.MODE === 'production' && !import.meta.env.VITE_ENABLE_SOCKETS) {
+      console.log('📡 Socket matching is disabled in production (Vercel serverless mode).');
+      return;
+    }
+
     // Use the same origin for sockets in production or fallback to localhost
     const socketUrl = import.meta.env.MODE === 'production' 
       ? window.location.origin 
