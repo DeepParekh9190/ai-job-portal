@@ -50,7 +50,7 @@ const Contact = () => {
               <span className="text-sm font-medium text-gray-300">Get in Touch</span>
           </div>
           <h1 className="text-4xl md:text-6xl font-bold font-display contact-anim">
-            We'd Love to <span className="text-electric-purple">Hear to You</span>
+            We'd Love to <span className="text-electric-purple">Hear from You</span>
           </h1>
           <p className="text-xl text-gray-400 max-w-2xl mx-auto contact-anim">
             Whether you have a question about features, pricing, or enterprise solutions, our team is ready to answer all your questions.
@@ -162,9 +162,9 @@ const ContactItem = ({ icon, title, content, link }) => (
      <div>
         <h4 className="font-bold text-white">{title}</h4>
         {link ? (
-          <a href={link} className="text-gray-400 hover:text-electric-purple transition-colors">{content}</a>
+          <a href={link} className="text-gray-400 hover:text-electric-purple transition-colors whitespace-nowrap">{content}</a>
         ) : (
-          <p className="text-gray-400">{content}</p>
+          <p className="text-gray-400 whitespace-nowrap">{content}</p>
         )}
      </div>
   </div>

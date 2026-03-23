@@ -1,8 +1,8 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { 
   Download, Plus, Trash2, Wand2, FileText, 
-  User, Briefcase, GraduationCap, Code, Mail, Phone, MapPin, Layout, Image as ImageIcon, X, Palette, RefreshCw 
+  User, Briefcase, GraduationCap, Code, Mail, Phone, MapPin, Layout, Image as ImageIcon, X, Palette, RefreshCw, Mic 
 } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
@@ -13,11 +13,100 @@ const ResumeBuilder = () => {
   const { user } = useSelector((state) => state.auth);
   const previewRef = useRef(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [resumeScale, setResumeScale] = useState(1);
+  const recognitionRef = useRef(null);
+
+  useEffect(() => {
+    const calculateScale = () => {
+       const parent = previewRef.current?.parentElement;
+       if (parent) {
+         const parentWidth = parent.clientWidth - 64; // Subtract padding
+         const scale = Math.min(1, parentWidth / 794); // 794px = 210mm @ 96DPI
+         setResumeScale(scale);
+       }
+    };
+    
+    calculateScale();
+    window.addEventListener('resize', calculateScale);
+    return () => window.removeEventListener('resize', calculateScale);
+  }, []);
   
   const [selectedColor, setSelectedColor] = useState('#7C3AED'); // Brand Purple default
   const [activeTab, setActiveTab] = useState('personal');
   const [selectedTemplate, setSelectedTemplate] = useState('ats-classic');
   const [resumeImage, setResumeImage] = useState(null);
+
+  const toggleRecording = () => {
+    if (isRecording) {
+      if (recognitionRef.current) recognitionRef.current.stop();
+      setIsRecording(false);
+      return;
+    }
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      toast.error('Voice recognition is not supported in this browser.');
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = false;
+    recognition.lang = 'en-US';
+
+    recognition.onstart = () => {
+      setIsRecording(true);
+      toast('Listening... Describe your experience!', { icon: '🎙️', duration: 3000 });
+    };
+
+    recognition.onresult = async (event) => {
+      const transcript = event.results[event.results.length - 1][0].transcript;
+      recognition.stop();
+      setIsRecording(false);
+      
+      setIsGenerating(true);
+      try {
+        const response = await api.post('/ai/chat', { 
+          message: `Update my resume data with this information: ${transcript}`,
+          context: 'resume_voice_update',
+          history: [] // No history needed for single command
+        });
+
+        if (response.success && response.response) {
+            // Attempt to extract JSON from AI response if it's formatted
+            // Or just update the summary/skills for now as a demo
+            const aiText = response.response;
+            setResumeData(prev => ({
+                ...prev,
+                personal: { ...prev.personal, summary: aiText.length > 100 ? aiText : prev.personal.summary },
+                skills: aiText.length < 100 ? aiText : prev.skills
+            }));
+            toast.success('AI updated your resume from voice!');
+        }
+      } catch (err) {
+        toast.error('AI failed to process voice data');
+      } finally {
+        setIsGenerating(false);
+      }
+    };
+
+    recognition.onerror = (event) => {
+      console.error('Speech recognition error:', event.error);
+      setIsRecording(false);
+      
+      let msg = 'Voice recognition encounterd an issue.';
+      if (event.error === 'not-allowed') msg = 'Microphone permission denied. Enable it in browser settings.';
+      if (event.error === 'no-speech') msg = 'No speech was detected. Please try again.';
+      if (event.error === 'audio-capture') msg = 'Microphone capture failed. Is it plugged in and not in use by another app?';
+      if (event.error === 'network') msg = 'Network connection lost. Please check your internet.';
+
+      toast.error(msg, { id: 'voice-error' });
+    };
+
+    recognition.start();
+    recognitionRef.current = recognition;
+  };
 
   const colors = [
     { name: 'Purple', value: '#7C3AED' },
@@ -64,7 +153,11 @@ const ResumeBuilder = () => {
         description: '• Built the MVP for a fintech application from scratch using React, Node.js, and MongoDB, helping the company secure Series A funding.\n• Implemented secure authentication and authorization flows utilizing OAuth 2.0 and JWT.\n• Collaborated closely with product managers and designers to iterate rapidly on user feedback, achieving a 4.8/5 star rating on the App Store.' 
       }
     ],
-    skills: 'System Design, Microservices, Kubernetes, Docker, AWS (Solutions Architect Professional), Google Cloud Platform, Python, Go, Java, React, Node.js, PostgreSQL, MongoDB, Redis, Apache Kafka, CI/CD (Jenkins, GitLab), Agile Methodologies, Team Leadership, Mentoring'
+    skills: 'System Design, Microservices, Kubernetes, Docker, AWS (Solutions Architect Professional), Google Cloud Platform, Python, Go, Java, React, Node.js, PostgreSQL, MongoDB, Redis, Apache Kafka, CI/CD (Jenkins, GitLab), Agile Methodologies, Team Leadership, Mentoring',
+    projects: [
+      { id: 1, name: 'AI-Powered Resume Analyzer', duration: 'Jan 2023 - Present', description: 'Developed a full-stack application using Next.js, Python (FastAPI), and OpenAI API to analyze resumes and provide tailored feedback. Implemented real-time PDF generation and voice-to-text integration for dynamic content updates.', link: 'https://github.com/sarah-mitchell/resume-analyzer' },
+      { id: 2, name: 'Distributed Ledger for Supply Chain', duration: 'Mar 2022 - Dec 2022', description: 'Designed and implemented a blockchain-based solution for transparent supply chain tracking using Hyperledger Fabric. Achieved a 99% reduction in data reconciliation time and improved auditability.', link: 'https://github.com/sarah-mitchell/supply-chain-ledger' }
+    ]
   };
 
   const handleLoadSample = () => {
@@ -87,10 +180,70 @@ const ResumeBuilder = () => {
     experience: [
       { id: 1, company: '', role: '', duration: '', description: '' }
     ],
-    skills: ''
+    skills: '',
+    projects: []
   });
 
+  const [spacerHeights, setSpacerHeights] = useState({});
+
+  useEffect(() => {
+    const handleSmartLayout = () => {
+       if (!previewRef.current) return;
+       const PAGE_HEIGHT = 1123;
+       const items = previewRef.current.querySelectorAll('.resume-item');
+       const newSpacers = {};
+       let changed = false;
+
+       items.forEach(el => {
+         const id = el.dataset.id;
+         const rect = el.getBoundingClientRect();
+         const cRect = previewRef.current.getBoundingClientRect();
+         const top = (rect.top - cRect.top) / resumeScale;
+         const bottom = (rect.bottom - cRect.top) / resumeScale;
+
+         const pIdx = Math.floor(top / PAGE_HEIGHT);
+         const pBtm = (pIdx + 1) * PAGE_HEIGHT;
+
+         if (bottom > pBtm && top < (pBtm - 10)) {
+           const gap = pBtm - top;
+           newSpacers[id] = gap;
+           if (spacerHeights[id] !== gap) changed = true;
+         }
+       });
+
+       if (changed || Object.keys(newSpacers).length !== Object.keys(spacerHeights).length) {
+         setSpacerHeights(newSpacers);
+       }
+    };
+    const timer = setTimeout(handleSmartLayout, 1000);
+    return () => clearTimeout(timer);
+  }, [resumeData, selectedTemplate, resumeScale]);
+
   // --- Handlers ---
+  const handleProjectChange = (id, field, value) => {
+    const updated = resumeData.projects.map(p => 
+      p.id === id ? { ...p, [field]: value } : p
+    );
+    setResumeData({ ...resumeData, projects: updated });
+  };
+
+  const addProject = () => {
+    setResumeData({
+      ...resumeData,
+      projects: [
+        ...resumeData.projects,
+        { id: Date.now(), name: '', duration: '', description: '', link: '' }
+      ]
+    });
+  };
+
+  const removeProject = (id) => {
+    setResumeData({
+      ...resumeData,
+      projects: resumeData.projects.filter(p => p.id !== id)
+    });
+  };
+
   const handlePersonalChange = (e) => {
     setResumeData({
       ...resumeData,
@@ -209,56 +362,47 @@ const ResumeBuilder = () => {
   };
 
   const downloadPDF = async () => {
-    const element = previewRef.current;
-    const clone = element.cloneNode(true);
+    if (!previewRef.current) return;
     
-    const container = document.createElement('div');
-    container.style.position = 'fixed';
-    container.style.top = '-10000px';
-    container.style.left = '-10000px';
-    container.style.zIndex = '-1000';
-    container.appendChild(clone);
-    document.body.appendChild(container);
+    setIsGenerating(true);
+    const loadingToast = toast.loading('Generating high-quality PDF...');
 
     try {
-      const canvas = await html2canvas(clone, { 
-        scale: 2, 
+      window.scrollTo(0, 0); // Reset scroll for capture
+      const element = previewRef.current;
+      const canvas = await html2canvas(element, { 
+        scale: 2.5, // High quality without massive file size 
         useCORS: true, 
         logging: false,
-        windowWidth: 794 // A4 width @ 96 DPI
+        backgroundColor: '#ffffff',
+        scrollX: 0,
+        scrollY: 0,
+        windowWidth: 1000 
       });
       
-      const imgData = canvas.toDataURL('image/png');
+      const imgData = canvas.toDataURL('image/png', 1.0);
       const pdf = new jsPDF('p', 'mm', 'a4');
       
-      const pdfWidth = pdf.internal.pageSize.getWidth(); // 210
-      const pdfHeight = pdf.internal.pageSize.getHeight(); // 297
+      const pageWidth = pdf.internal.pageSize.getWidth(); // 210mm
+      const pageHeight = pdf.internal.pageSize.getHeight(); // 297mm
       
-      const imgWidth = pdfWidth;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      // Calculate height to maintain aspect ratio
+      const imgHeight = (canvas.height * pageWidth) / canvas.width;
       
-      let heightLeft = imgHeight;
-      let position = 0;
-      
-      // First page
-      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-      heightLeft -= pdfHeight;
-      
-      // Subsequent pages
-      while (heightLeft > 0) {
-        position -= pdfHeight; // Move image up
-        pdf.addPage();
-        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-        heightLeft -= pdfHeight;
+      let currentHeight = 0;
+      while (currentHeight < imgHeight) {
+        if (currentHeight > 0) pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, -currentHeight, pageWidth, imgHeight);
+        currentHeight += pageHeight;
       }
 
       pdf.save(`${resumeData.personal.fullName.replace(/\s+/g, '_')}_Resume.pdf`);
-      toast.success('Resume downloaded!');
+      toast.success('Resume downloaded!', { id: loadingToast });
     } catch (error) {
       console.error('PDF Generation Error:', error);
-      toast.error('Failed to generate PDF');
+      toast.error('Failed to generate PDF', { id: loadingToast });
     } finally {
-      document.body.removeChild(container);
+      setIsGenerating(false);
     }
   };
 
@@ -497,6 +641,119 @@ const ResumeBuilder = () => {
     </div>
   );
 
+  // 4. LaTeX (Academic, Professional - Based on Jake's Resume)
+  const renderLatex = () => (
+    <div className="font-serif text-black p-[15mm] h-full leading-tight bg-white" style={{ fontFamily: '"Times New Roman", Times, serif', fontSize: '10.5pt' }}>
+       {/* Header */}
+       <div className="text-center mb-5">
+          <h1 className="text-3xl font-normal mb-1 tracking-tight" style={{ fontSize: '24pt' }}>{resumeData.personal.fullName || 'FULL NAME'}</h1>
+          <div className="text-[9.5pt] flex flex-wrap justify-center gap-2 text-gray-800">
+             {resumeData.personal.phone && <span>{resumeData.personal.phone}</span>}
+             {resumeData.personal.email && (
+               <>
+                 <span>|</span>
+                 <span className="text-blue-700 underline underline-offset-2">{resumeData.personal.email}</span>
+               </>
+             )}
+             {resumeData.personal.location && (
+               <>
+                 <span>|</span>
+                 <span>{resumeData.personal.location}</span>
+               </>
+             )}
+          </div>
+       </div>
+
+       {/* Summary */}
+       {resumeData.personal.summary && (
+         <div className="mb-4">
+            <h3 className="text-[11pt] font-bold uppercase tracking-tight border-b border-black mb-1.5 pb-0.5">Summary</h3>
+            <p className="text-[10pt] text-gray-900 leading-normal text-justify">{resumeData.personal.summary}</p>
+         </div>
+       )}
+
+       {/* Education */}
+       <div className="mb-4">
+          <h3 className="text-[11pt] font-bold uppercase tracking-tight border-b border-black mb-2 pb-0.5">Education</h3>
+          {resumeData.education.map(edu => (
+             <div key={edu.id} className="mb-2 last:mb-0">
+                <div className="flex justify-between font-bold text-[10pt]">
+                   <span>{edu.school}</span>
+                   <span>{edu.year}</span>
+                </div>
+                <div className="flex justify-between italic text-[10pt] text-gray-800">
+                   <span>{edu.degree}</span>
+                </div>
+             </div>
+          ))}
+       </div>
+
+       {/* Technical Skills */}
+       {resumeData.skills && (
+          <div className="mb-4">
+            <h3 className="text-[11pt] font-bold uppercase tracking-tight border-b border-black mb-1.5 pb-0.5">Technical Skills</h3>
+            <div className="text-[10pt] leading-relaxed text-gray-900">
+               {resumeData.skills.split('\n').map((line, i) => {
+                 const [label, content] = line.includes(':') ? line.split(':') : [null, line];
+                 return (
+                   <div key={i} className="mb-0.5">
+                      {label ? <span className="font-bold">{label}: </span> : null}
+                      <span>{content}</span>
+                   </div>
+                 );
+               })}
+            </div>
+          </div>
+       )}
+
+       {/* Experience */}
+       <div className="mb-4">
+          <h3 className="text-[11pt] font-bold uppercase tracking-tight border-b border-black mb-2 pb-0.5">Experience</h3>
+          {resumeData.experience.map(exp => (
+             <div key={exp.id} className="mb-3 last:mb-0 resume-item" data-id={`exp-${exp.id}`}>
+                {spacerHeights[`exp-${exp.id}`] && <div style={{ height: `${spacerHeights[`exp-${exp.id}`]}px` }} />}
+                <div className="flex justify-between font-bold text-[10pt]">
+                   <span>{exp.company}</span>
+                   <span>{exp.duration}</span>
+                </div>
+                <div className="italic text-[10pt] mb-1 text-gray-800">{exp.role}</div>
+                <ul className="list-disc ml-5 text-[9.5pt] text-gray-900 space-y-0.5">
+                   {exp.description.split('\n').map((line, i) => line.trim() && (
+                      <li key={i} className="pl-1">
+                        {line.startsWith('•') ? line.substring(1).trim() : line.trim()}
+                      </li>
+                   ))}
+                </ul>
+             </div>
+          ))}
+       </div>
+
+       {/* Projects */}
+       {resumeData.projects && resumeData.projects.length > 0 && (
+         <div className="mb-4">
+            <h3 className="text-[11pt] font-bold uppercase tracking-tight border-b border-black mb-2 pb-0.5">Projects</h3>
+            {resumeData.projects.map(proj => (
+               <div key={proj.id} className="mb-3 last:mb-0 resume-item" data-id={`proj-${proj.id}`}>
+                  {spacerHeights[`proj-${proj.id}`] && <div style={{ height: `${spacerHeights[`proj-${proj.id}`]}px` }} />}
+                  <div className="flex justify-between font-bold text-[10pt]">
+                     <span>{proj.name}</span>
+                     <span>{proj.duration}</span>
+                  </div>
+                  {proj.link && <div className="text-[9pt] text-blue-700 underline truncate mb-1">{proj.link}</div>}
+                  <ul className="list-disc ml-5 text-[9.5pt] text-gray-900 space-y-0.5">
+                    {proj.description.split('\n').map((line, i) => line.trim() && (
+                        <li key={i} className="pl-1">
+                          {line.startsWith('•') ? line.substring(1).trim() : line.trim()}
+                        </li>
+                    ))}
+                  </ul>
+               </div>
+            ))}
+         </div>
+       )}
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-midnight-900 pt-24 pb-12">
       <div className="container-custom">
@@ -506,6 +763,18 @@ const ResumeBuilder = () => {
             <p className="text-gray-400">Choose an ATS-friendly template and build your future.</p>
           </div>
           <div className="flex flex-wrap gap-3">
+             <button 
+              onClick={toggleRecording}
+              className={`flex items-center gap-2 px-4 py-2 border rounded-lg transition-all ${
+                isRecording 
+                  ? 'bg-red-500/10 border-red-500 text-red-500 animate-pulse' 
+                  : 'bg-white/5 border-white/10 text-gray-400 hover:border-white/30'
+              }`}
+              title={isRecording ? "Stop Recording" : "Voice Assistant"}
+            >
+              <Mic size={18} />
+              {isRecording ? 'Listening...' : 'Voice Assistant'}
+            </button>
              <button 
               onClick={handleAiEnhance}
               disabled={isGenerating}
@@ -535,6 +804,7 @@ const ResumeBuilder = () => {
                 <div className="grid grid-cols-3 gap-3">
                   {[
                     { id: 'ats-classic', name: 'ATS Classic', desc: 'No Image, High Readability' },
+                    { id: 'latex', name: 'LaTeX Style', desc: 'Academic, Minimalist, Sharp' },
                     { id: 'modern', name: 'Modern', desc: 'Sidebar, with Photo' },
                     { id: 'minimal', name: 'Minimalist', desc: 'Clean, Balanced' },
                   ].map(t => (
@@ -586,7 +856,7 @@ const ResumeBuilder = () => {
              {/* 2. Form Tabs */}
              <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
                 <div className="flex bg-midnight-800 p-1 rounded-xl mb-6 overflow-x-auto">
-                    {['personal', 'experience', 'education', 'skills'].map(tab => (
+                    {['personal', 'experience', 'education', 'projects', 'skills', 'latex'].map(tab => (
                       <button
                         key={tab}
                         onClick={() => setActiveTab(tab)}
@@ -596,12 +866,24 @@ const ResumeBuilder = () => {
                             : 'text-gray-400 hover:text-white hover:bg-white/5'
                         }`}
                       >
-                        {tab}
+                        {tab === 'latex' ? 'LaTeX Code' : tab}
                       </button>
                     ))}
                 </div>
 
                 <div className="space-y-6">
+                  {/* LaTeX Source Code */}
+                  {activeTab === 'latex' && (
+                    <div className="space-y-4 animate-fade-in text-left">
+                       <p className="text-xs text-gray-400">Copy this code to use in Overleaf or any LaTeX editor.</p>
+                       <textarea 
+                         readOnly 
+                         value={`\\documentclass[11pt,a4paper]{article}\n\\usepackage[utf8]{inputenc}\n\\usepackage{titlesec}\n\\usepackage{geometry}\n\\geometry{margin=1in}\n\n\\begin{document}\n\\centerline{\\Huge ${resumeData.personal.fullName?  resumeData.personal.fullName.toUpperCase() : 'YOUR NAME'}}\n\\centerline{${resumeData.personal.email} | ${resumeData.personal.phone}}\n\n\\section*{SUMMARY}\n${resumeData.personal.summary}\n\n\\section*{EXPERIENCE}\n${resumeData.experience.map(exp => `\\textbf{${exp.company}} \\hfill ${exp.duration} \\\\\n\\textit{${exp.role}} \\\\\n${exp.description} \\\\`).join('\n\n')}\n\n\\section*{PROJECTS}\n${resumeData.projects.map(p => `\\textbf{${p.name}} \\\\\n${p.description} \\\\`).join('\n\n')}\n\n\\section*{SKILLS}\n${resumeData.skills}\n\n\\end{document}`} 
+                         rows={15} 
+                         className="w-full bg-midnight-900 border border-white/10 rounded-lg p-4 text-xs font-mono text-electric-purple focus:border-electric-purple outline-none resize-none" 
+                       />
+                    </div>
+                  )}
                   {/* Personal */}
                   {activeTab === 'personal' && (
                     <div className="space-y-4 animate-fade-in">
@@ -638,43 +920,62 @@ const ResumeBuilder = () => {
 
                   {/* Experience */}
                   {activeTab === 'experience' && (
-                    <div className="space-y-4 animate-fade-in">
-                      {resumeData.experience.map((exp, index) => (
-                        <div key={exp.id} className="p-4 bg-midnight-900 rounded-xl border border-white/5 relative group">
-                           <button onClick={() => removeExperience(exp.id)} className="absolute top-2 right-2 text-gray-600 hover:text-red-500"><Trash2 size={16}/></button>
-                           <div className="grid grid-cols-2 gap-3 mb-3">
-                              <input placeholder="Company" value={exp.company} onChange={(e) => handleExperienceChange(exp.id, 'company', e.target.value)} className="bg-transparent border-b border-white/10 p-2 text-white text-sm focus:border-electric-purple outline-none" />
-                              <input placeholder="Role" value={exp.role} onChange={(e) => handleExperienceChange(exp.id, 'role', e.target.value)} className="bg-transparent border-b border-white/10 p-2 text-white text-sm focus:border-electric-purple outline-none" />
-                           </div>
-                           <input placeholder="Duration" value={exp.duration} onChange={(e) => handleExperienceChange(exp.id, 'duration', e.target.value)} className="w-full bg-transparent border-b border-white/10 p-2 text-white text-sm mb-3 focus:border-electric-purple outline-none" />
-                           <textarea placeholder="Description" value={exp.description} onChange={(e) => handleExperienceChange(exp.id, 'description', e.target.value)} rows={3} className="w-full bg-transparent border border-white/10 rounded p-2 text-white text-sm resize-none focus:border-electric-purple outline-none" />
-                        </div>
-                      ))}
-                      <button onClick={addExperience} className="w-full py-3 border border-dashed border-white/20 rounded-xl text-gray-400 hover:text-white hover:bg-white/5 transition-all flex items-center justify-center gap-2">
-                        <Plus size={16} /> Add Position
-                      </button>
+                    <div className="space-y-6 animate-fade-in">
+                       {resumeData.experience.map(exp => (
+                         <div key={exp.id} className="p-4 bg-midnight-900 rounded-xl border border-white/5 space-y-4 relative group">
+                            <button onClick={() => removeExperience(exp.id)} className="absolute top-2 right-2 text-gray-600 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"><Trash2 size={16}/></button>
+                            <div className="grid grid-cols-2 gap-4">
+                               <input value={exp.company} onChange={(e) => handleExperienceChange(exp.id, 'company', e.target.value)} className="w-full bg-midnight-800 border border-white/10 rounded-lg p-3 text-white focus:border-electric-purple outline-none" placeholder="Company Name" />
+                               <input value={exp.duration} onChange={(e) => handleExperienceChange(exp.id, 'duration', e.target.value)} className="w-full bg-midnight-800 border border-white/10 rounded-lg p-3 text-white focus:border-electric-purple outline-none" placeholder="Duration (e.g. 2021-Present)" />
+                            </div>
+                            <input value={exp.role} onChange={(e) => handleExperienceChange(exp.id, 'role', e.target.value)} className="w-full bg-midnight-800 border border-white/10 rounded-lg p-3 text-white focus:border-electric-purple outline-none" placeholder="Job Role" />
+                            <textarea value={exp.description} onChange={(e) => handleExperienceChange(exp.id, 'description', e.target.value)} rows={4} className="w-full bg-midnight-800 border border-white/10 rounded-lg p-3 text-white focus:border-electric-purple outline-none resize-none" placeholder="Achievements/Description..." />
+                         </div>
+                       ))}
+                       <button onClick={addExperience} className="w-full py-3 border border-dashed border-white/20 rounded-xl text-gray-400 hover:text-white hover:bg-white/5 transition-all flex items-center justify-center gap-2">
+                         <Plus size={16} /> Add Experience
+                       </button>
+                    </div>
+                  )}
+
+                  {/* Projects */}
+                  {activeTab === 'projects' && (
+                    <div className="space-y-6 animate-fade-in">
+                       {resumeData.projects.map(proj => (
+                         <div key={proj.id} className="p-4 bg-midnight-900 rounded-xl border border-white/5 space-y-4 relative group">
+                            <button onClick={() => removeProject(proj.id)} className="absolute top-2 right-2 text-gray-600 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"><Trash2 size={16}/></button>
+                            <div className="grid grid-cols-2 gap-4">
+                               <input value={proj.name} onChange={(e) => handleProjectChange(proj.id, 'name', e.target.value)} className="w-full bg-midnight-800 border border-white/10 rounded-lg p-3 text-white focus:border-electric-purple outline-none" placeholder="Project Name" />
+                               <input value={proj.duration} onChange={(e) => handleProjectChange(proj.id, 'duration', e.target.value)} className="w-full bg-midnight-800 border border-white/10 rounded-lg p-3 text-white focus:border-electric-purple outline-none" placeholder="Duration" />
+                            </div>
+                            <input value={proj.link} onChange={(e) => handleProjectChange(proj.id, 'link', e.target.value)} className="w-full bg-midnight-800 border border-white/10 rounded-lg p-3 text-white focus:border-electric-purple outline-none" placeholder="Project Link (GitHub/Demo)" />
+                            <textarea value={proj.description} onChange={(e) => handleProjectChange(proj.id, 'description', e.target.value)} rows={4} className="w-full bg-midnight-800 border border-white/10 rounded-lg p-3 text-white focus:border-electric-purple outline-none resize-none" placeholder="Project description..." />
+                         </div>
+                       ))}
+                       <button onClick={addProject} className="w-full py-3 border border-dashed border-white/20 rounded-xl text-gray-400 hover:text-white hover:bg-white/5 transition-all flex items-center justify-center gap-2">
+                         <Plus size={16} /> Add Project
+                       </button>
                     </div>
                   )}
 
                   {/* Education */}
                   {activeTab === 'education' && (
-                    <div className="space-y-4 animate-fade-in">
-                      {resumeData.education.map((edu, index) => (
-                         <div key={edu.id} className="p-4 bg-midnight-900 rounded-xl border border-white/5 relative group">
-                           <button onClick={() => removeEducation(edu.id)} className="absolute top-2 right-2 text-gray-600 hover:text-red-500"><Trash2 size={16}/></button>
-                           <div className="grid grid-cols-2 gap-3 mb-3">
-                              <input placeholder="School" value={edu.school} onChange={(e) => handleEducationChange(edu.id, 'school', e.target.value)} className="bg-transparent border-b border-white/10 p-2 text-white text-sm focus:border-electric-purple outline-none" />
-                              <input placeholder="Degree" value={edu.degree} onChange={(e) => handleEducationChange(edu.id, 'degree', e.target.value)} className="bg-transparent border-b border-white/10 p-2 text-white text-sm focus:border-electric-purple outline-none" />
-                           </div>
-                           <input placeholder="Year" value={edu.year} onChange={(e) => handleEducationChange(edu.id, 'year', e.target.value)} className="w-full bg-transparent border-b border-white/10 p-2 text-white text-sm focus:border-electric-purple outline-none" />
+                    <div className="space-y-6 animate-fade-in">
+                       {resumeData.education.map(edu => (
+                         <div key={edu.id} className="p-4 bg-midnight-900 rounded-xl border border-white/5 space-y-4 relative group">
+                            <button onClick={() => removeEducation(edu.id)} className="absolute top-2 right-2 text-gray-600 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"><Trash2 size={16}/></button>
+                            <div className="grid grid-cols-2 gap-4">
+                               <input value={edu.school} onChange={(e) => handleEducationChange(edu.id, 'school', e.target.value)} className="w-full bg-midnight-800 border border-white/10 rounded-lg p-3 text-white focus:border-electric-purple outline-none" placeholder="Institution Name" />
+                               <input value={edu.year} onChange={(e) => handleEducationChange(edu.id, 'year', e.target.value)} className="w-full bg-midnight-800 border border-white/10 rounded-lg p-3 text-white focus:border-electric-purple outline-none" placeholder="Year" />
+                            </div>
+                            <input value={edu.degree} onChange={(e) => handleEducationChange(edu.id, 'degree', e.target.value)} className="w-full bg-midnight-800 border border-white/10 rounded-lg p-3 text-white focus:border-electric-purple outline-none" placeholder="Degree/Course" />
                          </div>
-                      ))}
-                      <button onClick={addEducation} className="w-full py-3 border border-dashed border-white/20 rounded-xl text-gray-400 hover:text-white hover:bg-white/5 transition-all flex items-center justify-center gap-2">
-                        <Plus size={16} /> Add Education
-                      </button>
+                       ))}
+                       <button onClick={addEducation} className="w-full py-3 border border-dashed border-white/20 rounded-xl text-gray-400 hover:text-white hover:bg-white/5 transition-all flex items-center justify-center gap-2">
+                         <Plus size={16} /> Add Education
+                       </button>
                     </div>
                   )}
-
                   {/* Skills */}
                   {activeTab === 'skills' && (
                     <div className="space-y-4 animate-fade-in">
@@ -692,19 +993,30 @@ const ResumeBuilder = () => {
           </div>
 
           {/* PREVIEW COLUMN (Right) */}
-          <div className="lg:col-span-7 bg-gray-900 rounded-2xl p-4 md:p-8 flex justify-center items-start shadow-inner">
-             <div 
-               ref={previewRef}
-               className="bg-white text-black w-[210mm] min-h-[297mm] h-auto shadow-2xl origin-top transition-all duration-300"
-               style={{ 
-                 backgroundImage: 'linear-gradient(to bottom, transparent calc(297mm - 1px), #e5e7eb calc(297mm - 1px), #e5e7eb 297mm)', 
-                 backgroundSize: '100% 297mm' 
-               }}
-             >
-                {selectedTemplate === 'ats-classic' && renderAtsClassic()}
-                {selectedTemplate === 'modern' && renderModern()}
-                {selectedTemplate === 'minimal' && renderMinimal()}
-             </div>
+          <div className="lg:col-span-7 bg-gray-900/40 rounded-3xl p-4 md:p-8 flex justify-center items-start shadow-inner overflow-hidden min-h-[800px]">
+               <div 
+                 ref={previewRef}
+                 className="bg-white text-black w-[794px] min-h-[1123px] h-auto shadow-2xl origin-top transition-transform duration-300 relative"
+                 style={{ 
+                    transform: `scale(${resumeScale})`,
+                    marginBottom: `calc(-1123px * (1 - ${resumeScale}))` // Pull up layout for smaller scales
+                 }}
+               >
+                  {/* Visual Page Break Indicators - Ignored during PDF capture */}
+                  <div 
+                    data-html2canvas-ignore="true"
+                    className="absolute inset-0 pointer-events-none" 
+                    style={{
+                      backgroundImage: 'repeating-linear-gradient(to bottom, transparent, transparent 1122px, #e5e7eb 1122px, #e5e7eb 1123px)',
+                      backgroundSize: '100% 1123px'
+                    }}
+                  ></div>
+
+                  {selectedTemplate === 'ats-classic' && renderAtsClassic()}
+                  {selectedTemplate === 'latex' && renderLatex()}
+                  {selectedTemplate === 'modern' && renderModern()}
+                  {selectedTemplate === 'minimal' && renderMinimal()}
+               </div>
           </div>
 
         </div>

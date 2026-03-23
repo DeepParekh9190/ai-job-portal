@@ -11,12 +11,18 @@ import {
   improveSection,
   generateCoverLetterAI,
   getKeywordSuggestions,
-  getSkillRecommendations
+  getSkillRecommendations,
+  chatWithAI
 } from '../controllers/aiController.js';
 
 const router = express.Router();
 
-// All AI routes require authentication and user role
+// Public AI Routes
+router.post('/chat', chatWithAI);
+
+// ==================== PROTECTED ROUTES ====================
+
+// All AI routes below require authentication and user role
 router.use(protect, userOnly);
 
 // ==================== RESUME AI FEATURES ====================

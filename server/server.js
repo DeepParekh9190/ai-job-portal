@@ -1,5 +1,5 @@
+import 'dotenv/config';
 import express from 'express';
-import dotenv from 'dotenv';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
@@ -16,9 +16,6 @@ import aiRoutes from './routes/aiRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
 import { getApplicationById } from './controllers/applicationController.js';
 import { protect } from './middleware/auth.js';
-
-// Load environment variables
-dotenv.config();
 
 // Connect to MongoDB
 connectDB();
