@@ -96,8 +96,14 @@ function App() {
 
   // Global WebSocket Listener for Admin Broadcasts
   useEffect(() => {
-    const socket = io('http://localhost:5000', {
+    // Use the same origin for sockets in production or fallback to localhost
+    const socketUrl = import.meta.env.MODE === 'production' 
+      ? window.location.origin 
+      : (import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000');
+    
+    const socket = io(socketUrl, {
       withCredentials: true,
+      transports: ['websocket', 'polling']
     });
 
     if (user && user.role) {
