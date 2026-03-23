@@ -1,48 +1,47 @@
 # Dependencies
 node_modules/
+**/node_modules/
 .pnp
 .pnp.js
 
 # Testing
 coverage/
 
-# Production
-build/
+# Production / Build
 dist/
+**/dist/
+build/
+out/
+.vercel/
 
-# Env files
+# Env & Secrets
 .env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+*.env
+.env.*
+credentials.md
 
 # Logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+logs/
+*.log
 
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
+# Editor / OS
+.vscode/
 .idea/
 .DS_Store
+Thumbs.db
 *.suo
-*.ntvs*
-*.njsproj
 *.sln
 *.sw?
 
-# Build output
-client/dist/
-
-# Credentials & secrets
-credentials.md
-*.env
-
-# Temporary utility scripts
-format_docx.py
+# Project specifics
+.agent/
+.gemini/
+screenshots/
 take_screenshots.js
-
-# Project reports (keep in Google Drive, not repo)
+list_models.js
+test_ai.js
 PROJECT_REPORT*.docx
+format_docx.py

@@ -24,6 +24,7 @@ import {
   findMatchingJobs,
   recommendSkills
 } from '../utils/jobMatcher.js';
+import { callAI as callAIService } from '../utils/aiService.js';
 
 /**
  * @desc    Generate AI Resume
@@ -58,11 +59,27 @@ export const generateAIResume = async (req, res) => {
         phone: userData.phone
       },
       summary: generatedContent.summary,
-      experience: generatedContent.experience || [],
-      education: generatedContent.education || [],
-      skills: generatedContent.skills || {},
+      experience: (generatedContent.experience || []).map(exp => ({
+        jobTitle: exp.title || "Experience",
+        company: exp.company || "Company",
+        description: exp.description || "",
+        achievements: exp.achievements || [],
+        startDate: new Date() // Fallback for schema required dates
+      })),
+      education: (generatedContent.education || []).map(edu => ({
+        degree: edu.degree || "Degree",
+        institution: edu.institution || "Institution",
+        startDate: new Date() // Fallback
+      })),
+      skills: {
+        technical: (generatedContent.skills?.technical || []).map(skill => ({
+          name: typeof skill === 'string' ? skill : (skill.name || ""),
+          level: 'intermediate'
+        })),
+        soft: generatedContent.skills?.soft || []
+      },
       aiGeneration: {
-        model: process.env.AI_PROVIDER || 'anthropic',
+        model: 'gemini-2.5-flash',
         generatedAt: new Date()
       }
     });
@@ -225,11 +242,32 @@ export const getRecommendedJobs = async (req, res) => {
     // Find matching jobs
     const matches = await findMatchingJobs(user, jobs, limit);
 
+    // AI Match Explainer for top 3
+    const augmentedMatches = await Promise.all(matches.slice(0, 3).map(async (job) => {
+      const explainPrompt = `Current User Skills: ${user.skills.join(', ')}.
+        Job: ${job.title} at ${job.company}.
+        Requirements: ${job.requirements?.join(', ')}.
+        Explain in 1 short, exciting sentence why this is a good fit.`;
+      
+      try {
+        const reason = await callAIService(explainPrompt, "You are a career matching AI. Be brief and professional.", 60);
+        return { ...job, aiReason: reason };
+      } catch (err) {
+        return job;
+      }
+    }));
+
+    // Recombine (top 3 with reason, rest as is)
+    const finalResults = [
+      ...augmentedMatches,
+      ...matches.slice(3)
+    ];
+
     res.status(200).json({
       success: true,
       message: 'Recommended jobs fetched successfully',
-      count: matches.length,
-      jobs: matches
+      count: finalResults.length,
+      jobs: finalResults
     });
   } catch (error) {
     console.error('Get Recommended Jobs Error:', error);
@@ -475,6 +513,78 @@ export const getSkillRecommendations = async (req, res) => {
   }
 };
 
+/**
+ * @desc    Chat with AI Support
+ * @route   POST /api/ai/chat
+ * @access  Public
+ */
+export const chatWithAI = async (req, res) => {
+  try {
+    const { message, history, context } = req.body;
+
+    if (!message) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide a message'
+      });
+    }
+
+    // Default system prompt
+    let systemPrompt = `You are Talentora AI, the expert career assistant for TalentoraAI (a premium job portal).
+Your primary goal is to help users with:
+- Finding jobs that match their skills.
+- Optimizing their professional resumes.
+- Answering questions about the TalentoraAI platform.
+- Providing career advice.
+Tone: Premium, helpful, and tech-forward.`;
+
+    // Specialized context for Mock Interview
+    if (context === 'mock_interview') {
+      systemPrompt = `You are acting as a Senior Technical Recruiter and Hiring Manager at an elite tech firm.
+You are conducting a professional Mock Interview for a TalentoraAI user.
+Instructions:
+1. If the user hasn't specified a target role, ask: "What role would you like to interview for today?"
+2. Once the role is known, ask exactly ONE challenging behavioral or technical question at a time.
+3. After the user answers, provide:
+   - "Feedback": A brief evaluation of their response.
+   - "Next Question": The next interview question.
+4. Keep the experience rigorous, realistic, and professional.`;
+    }
+
+    // Specialized context for Resume Voice Update
+    if (context === 'resume_voice_update') {
+      systemPrompt = `You are a professional resume parser and writer. 
+      The user will provide a spoken transcript of their work experience or skills.
+      Your task is to transform this raw, informal text into:
+      - A professional, high-impact summary (if they describe their background).
+      - OR a comma-separated list of technical/soft skills (if they list skills).
+      Be concise and direct. Output ONLY the improved text without conversational filler.`;
+    }
+
+    // Construct history for AI context if provided
+    let fullPrompt = message;
+    if (history && Array.isArray(history)) {
+      const historyContext = history.map(h => `${h.sender === 'user' ? 'User' : 'Assistant'}: ${h.text}`).join('\n');
+      fullPrompt = `Conversation History:\n${historyContext}\n\nUser: ${message}`;
+    }
+
+    const aiResponse = await callAIService(fullPrompt, systemPrompt, 1000);
+
+    res.status(200).json({
+      success: true,
+      message: 'Response generated',
+      response: aiResponse
+    });
+  } catch (error) {
+    console.error('AI Chat Error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error generating AI response',
+      error: error.message
+    });
+  }
+};
+
 export default {
   generateAIResume,
   analyzeResumeAI,
@@ -485,5 +595,6 @@ export default {
   improveSection,
   generateCoverLetterAI,
   getKeywordSuggestions,
-  getSkillRecommendations
+  getSkillRecommendations,
+  chatWithAI
 };

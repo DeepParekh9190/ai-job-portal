@@ -1,6 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
+import ReactMarkdown from 'react-markdown';
 import { MessageSquare, X, Send, Bot, User, Minimize2 } from 'lucide-react';
 import { useSelector } from 'react-redux';
+import api from '../../services/api';
+import toast from 'react-hot-toast';
 
 const AIChatSupport = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -9,6 +12,7 @@ const AIChatSupport = () => {
   ]);
   const [inputText, setInputText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [isInterviewMode, setIsInterviewMode] = useState(false);
   const chatEndRef = useRef(null);
   const { user } = useSelector((state) => state.auth);
 
@@ -18,6 +22,16 @@ const AIChatSupport = () => {
 
   const scrollToBottom = () => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  const startInterview = () => {
+    setIsInterviewMode(true);
+    const welcome = {
+      id: Date.now(),
+      text: "Alright! Let's start. I'll act as a Senior Technical Recruiter. What role are we interviewing for today?",
+      sender: 'bot'
+    };
+    setMessages(prev => [...prev, welcome]);
   };
 
   const handleSend = async (e) => {
@@ -30,39 +44,39 @@ const AIChatSupport = () => {
       sender: 'user' 
     };
     
+    // Add user message to UI immediately
     setMessages(prev => [...prev, userMessage]);
     setInputText('');
     setIsTyping(true);
 
-    // Simulate AI Response
-    setTimeout(() => {
-      const botResponse = generateResponse(inputText);
+    try {
+      // Call Real AI Backend
+      const response = await api.post('/ai/chat', { 
+        message: inputText,
+        history: messages.slice(-5), // Send last 5 messages for context
+        context: isInterviewMode ? 'mock_interview' : 'general_support'
+      });
+
+      if (response.success) {
+        setMessages(prev => [...prev, { 
+          id: Date.now() + 1, 
+          text: response.response, 
+          sender: 'bot' 
+        }]);
+      } else {
+        throw new Error(response.message || 'Failed to get AI response');
+      }
+    } catch (error) {
+      console.error('AI Chat Error:', error);
       setMessages(prev => [...prev, { 
         id: Date.now() + 1, 
-        text: botResponse, 
+        text: "I encountered an error while processing your request. Please try again or check your internet connection.", 
         sender: 'bot' 
       }]);
+      toast.error('AI service temporarily unavailable');
+    } finally {
       setIsTyping(false);
-    }, 1500);
-  };
-
-  // Simple rule-based mock AI for demo purposes
-  const generateResponse = (text) => {
-    const lowerText = text.toLowerCase();
-    
-    if (lowerText.includes('job') || lowerText.includes('work')) 
-      return "You can browse thousands of active listings on our Jobs page. Use filters to narrow down by salary, location, and tech stack.";
-    
-    if (lowerText.includes('resume') || lowerText.includes('cv'))
-      return "Our AI Resume Analyzer can scan your CV and verify your skills instantly. Check it out in your user dashboard!";
-
-    if (lowerText.includes('pricing') || lowerText.includes('cost'))
-      return "For candidates, Talentora is 100% free. Employers pay only upon successful hires.";
-
-    if (lowerText.includes('hello') || lowerText.includes('hi'))
-      return `Hello ${user ? user.name : 'there'}! Ready to find your dream role?`;
-
-    return "I'm not sure about that specific detail yet, but our support team is available 24/7 if you need human assistance!";
+    }
   };
 
   return (
@@ -70,11 +84,25 @@ const AIChatSupport = () => {
       
       {/* Chat Window */}
       {isOpen && (
-        <div className="mb-4 w-80 md:w-96 bg-midnight-800 border border-white/10 rounded-2xl shadow-2xl overflow-hidden flex flex-col animate-in slide-in-from-bottom-10 fade-in duration-300">
+        <div className="relative mb-4">
+          {/* Colorful Edge Lights (Aura-Clipper Layer) */}
+          {isTyping && (
+            <div className="absolute -inset-[2px] overflow-hidden rounded-none -z-20">
+              <div className="absolute inset-[-150%] bg-thinking-gradient animate-border-rotate blur-[2px]">
+              </div>
+            </div>
+          )}
+          
+          <div className={`w-80 md:w-96 bg-midnight-800 border border-white/10 rounded-none shadow-2xl relative flex flex-col h-[500px] animate-in slide-in-from-bottom-10 fade-in duration-500 transition-all ${
+            isTyping ? 'shadow-[0_0_50px_rgba(139,92,246,0.1)]' : ''
+          }`}>
           
           {/* Header */}
-          <div className="bg-gradient-to-r from-electric-purple to-indigo-600 p-4 flex items-center justify-between">
-            <div className="flex items-center gap-3">
+          <div className="bg-gradient-to-r from-electric-purple to-indigo-600 p-4 flex items-center justify-between shrink-0 relative overflow-hidden">
+            {isTyping && (
+              <div className="absolute inset-0 bg-white/5 animate-pulse pointer-events-none"></div>
+            )}
+            <div className="flex items-center gap-3 relative z-10">
               <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
                 <Bot className="w-5 h-5 text-white" />
               </div>
@@ -85,7 +113,14 @@ const AIChatSupport = () => {
                 </span>
               </div>
             </div>
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 relative z-10">
+              <button 
+                onClick={() => setIsInterviewMode(!isInterviewMode)} 
+                className={`p-1 rounded-md transition-colors ${isInterviewMode ? 'bg-white/20 text-white' : 'hover:bg-white/20 text-white/70'}`}
+                title={isInterviewMode ? "End Interview Mode" : "Start Mock Interview"}
+              >
+                <Bot className="w-4 h-4" />
+              </button>
               <button onClick={() => setIsOpen(false)} className="p-1 hover:bg-white/20 rounded-md transition-colors text-white">
                 <Minimize2 className="w-4 h-4" />
               </button>
@@ -96,7 +131,7 @@ const AIChatSupport = () => {
           </div>
 
           {/* Messages Area */}
-          <div className="flex-1 bg-midnight-900/95 p-4 h-80 overflow-y-auto custom-scrollbar">
+          <div className="flex-1 bg-midnight-900/95 p-4 overflow-y-auto custom-scrollbar scroll-smooth">
             {messages.map((msg) => (
               <div 
                 key={msg.id} 
@@ -112,7 +147,21 @@ const AIChatSupport = () => {
                     ? 'bg-electric-purple text-white rounded-br-none' 
                     : 'bg-white/10 text-gray-200 rounded-bl-none border border-white/5'
                 }`}>
-                  {msg.text}
+                  {msg.sender === 'bot' ? (
+                    <div className="prose prose-invert prose-sm max-w-none text-gray-200">
+                      <ReactMarkdown 
+                        children={String(msg.text || "")}
+                        components={{
+                          p: ({children}) => <p className="mb-2 last:mb-0">{children}</p>,
+                          strong: ({children}) => <strong className="bold text-electric-purple">{children}</strong>,
+                          ul: ({children}) => <ul className="list-disc ml-4 mb-2">{children}</ul>,
+                          li: ({children}) => <li className="mb-1">{children}</li>,
+                        }}
+                      />
+                    </div>
+                  ) : (
+                    msg.text
+                  )}
                 </div>
                 {msg.sender === 'user' && (
                   <div className="w-6 h-6 rounded-full bg-gray-700 flex items-center justify-center ml-2 shrink-0 mt-1">
@@ -138,7 +187,7 @@ const AIChatSupport = () => {
           </div>
 
           {/* Input Area */}
-          <form onSubmit={handleSend} className="p-3 bg-midnight-800 border-t border-white/10">
+          <form onSubmit={handleSend} className="p-3 bg-midnight-800 border-t border-white/10 shrink-0">
             <div className="relative">
               <input
                 type="text"
@@ -159,11 +208,10 @@ const AIChatSupport = () => {
               <span className="text-[10px] text-gray-500">Powered by Talentora AI</span>
             </div>
           </form>
-
         </div>
+      </div>
       )}
 
-      {/* Floating Trigger Button */}
       {/* Floating Trigger Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}

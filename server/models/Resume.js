@@ -67,8 +67,7 @@ const resumeSchema = new mongoose.Schema({
     },
     location: String,
     startDate: {
-      type: Date,
-      required: true
+      type: Date
     },
     endDate: Date,
     currentlyWorking: {

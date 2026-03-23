@@ -165,7 +165,7 @@ const About = () => {
       {/* Team CTA */}
       <section className="py-20 bg-gradient-to-r from-electric-purple/10 to-transparent">
         <div className="container-custom text-center">
-           <h2 className="text-3xl font-bold mb-6">Join Our Jounrey</h2>
+           <h2 className="text-3xl font-bold mb-6">Join Our Journey</h2>
            <p className="text-gray-300 max-w-2xl mx-auto mb-8">
              We are always looking for visionaries to help us shape the future of work.
            </p>
