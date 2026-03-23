@@ -4,6 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { getCurrentUser } from './redux/slices/authSlice';
 import { io } from 'socket.io-client';
 import toast from 'react-hot-toast';
+import { Analytics as VercelAnalytics } from '@vercel/analytics/react';
 
 // Layout Components
 import AIChatSupport from './components/ui/AIChatSupport';
@@ -424,6 +425,7 @@ function App() {
       </main>
 
       <Footer />
+      <VercelAnalytics />
     </div>
   );
 }
