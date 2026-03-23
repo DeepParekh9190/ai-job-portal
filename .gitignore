@@ -14,10 +14,10 @@ build/
 out/
 .vercel/
 
-# Env & Secrets
-.env
-*.env
-.env.*
+# Env & Secrets (PUSHING AS IS AS PER USER REQUEST)
+# .env -> UNIGNORED
+# *.env -> UNIGNORED
+# .env.* -> UNIGNORED
 credentials.md
 
 # Logs
@@ -40,8 +40,8 @@ Thumbs.db
 .agent/
 .gemini/
 screenshots/
-take_screenshots.js
-list_models.js
-test_ai.js
+# take_screenshots.js -> UNIGNORED
+# list_models.js -> UNIGNORED
+# test_ai.js -> UNIGNORED
 PROJECT_REPORT*.docx
 format_docx.py

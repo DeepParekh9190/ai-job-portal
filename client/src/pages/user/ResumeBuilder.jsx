@@ -187,9 +187,13 @@ const ResumeBuilder = () => {
   const [spacerHeights, setSpacerHeights] = useState({});
 
   useEffect(() => {
+    setSpacerHeights({});
+  }, [selectedTemplate]);
+
+  useEffect(() => {
     const handleSmartLayout = () => {
        if (!previewRef.current) return;
-       const PAGE_HEIGHT = 1123;
+       const PAGE_HEIGHT = 1123; // A4 @ 96DPI
        const items = previewRef.current.querySelectorAll('.resume-item');
        const newSpacers = {};
        let changed = false;
@@ -198,16 +202,22 @@ const ResumeBuilder = () => {
          const id = el.dataset.id;
          const rect = el.getBoundingClientRect();
          const cRect = previewRef.current.getBoundingClientRect();
+         
+         // Normalize to virtual 1:1 coordinate space
          const top = (rect.top - cRect.top) / resumeScale;
          const bottom = (rect.bottom - cRect.top) / resumeScale;
 
          const pIdx = Math.floor(top / PAGE_HEIGHT);
          const pBtm = (pIdx + 1) * PAGE_HEIGHT;
 
-         if (bottom > pBtm && top < (pBtm - 10)) {
+         // If element straddles the page break line
+         if (bottom > pBtm && top < (pBtm - 5)) { // 5px buffer
            const gap = pBtm - top;
            newSpacers[id] = gap;
            if (spacerHeights[id] !== gap) changed = true;
+         } else if (spacerHeights[id]) {
+            // Item was previous spacing, check if it's still needed
+            // If item WITHOUT spacer would now be fine, remove it (not implemented yet for simplicity, but avoid loops)
          }
        });
 
@@ -217,7 +227,7 @@ const ResumeBuilder = () => {
     };
     const timer = setTimeout(handleSmartLayout, 1000);
     return () => clearTimeout(timer);
-  }, [resumeData, selectedTemplate, resumeScale]);
+  }, [resumeData, selectedTemplate, resumeScale, spacerHeights]);
 
   // --- Handlers ---
   const handleProjectChange = (id, field, value) => {
@@ -371,13 +381,13 @@ const ResumeBuilder = () => {
       window.scrollTo(0, 0); // Reset scroll for capture
       const element = previewRef.current;
       const canvas = await html2canvas(element, { 
-        scale: 2.5, // High quality without massive file size 
+        scale: 2, // Slightly lower scale for better reliability and performance
         useCORS: true, 
         logging: false,
         backgroundColor: '#ffffff',
         scrollX: 0,
         scrollY: 0,
-        windowWidth: 1000 
+        windowWidth: 794 // Match the container width exactly
       });
       
       const imgData = canvas.toDataURL('image/png', 1.0);
@@ -421,14 +431,16 @@ const ResumeBuilder = () => {
       </div>
 
       {resumeData.personal.summary && (
-        <div className="mb-8">
+        <div className="mb-8 resume-item" data-id="ats-summary">
+          {spacerHeights['ats-summary'] && <div style={{ height: `${spacerHeights['ats-summary']}px` }} />}
           <h2 className="text-base font-bold uppercase border-b mb-3 pb-1" style={{ color: selectedColor, borderColor: selectedColor }}>Professional Summary</h2>
           <p className="text-base leading-7 text-justify text-gray-800">{resumeData.personal.summary}</p>
         </div>
       )}
 
       {resumeData.skills && (
-         <div className="mb-8">
+         <div className="mb-8 resume-item" data-id="skills-section">
+            {spacerHeights['skills-section'] && <div style={{ height: `${spacerHeights['skills-section']}px` }} />}
             <h2 className="text-base font-bold uppercase border-b mb-3 pb-1" style={{ color: selectedColor, borderColor: selectedColor }}>Technical Skills</h2>
             <ul className="list-disc pl-5 text-base leading-7 text-gray-800">
                {resumeData.skills.split(',').map((skill, i) => skill.trim() && (
@@ -441,7 +453,8 @@ const ResumeBuilder = () => {
       <div className="mb-8">
         <h2 className="text-base font-bold uppercase border-b mb-4 pb-1" style={{ color: selectedColor, borderColor: selectedColor }}>Experience</h2>
         {resumeData.experience.map(exp => (
-          <div key={exp.id} className="mb-6 last:mb-0">
+          <div key={exp.id} className="mb-6 last:mb-0 resume-item" data-id={`exp-${exp.id}`}>
+            {spacerHeights[`exp-${exp.id}`] && <div style={{ height: `${spacerHeights[`exp-${exp.id}`]}px` }} />}
             <div className="flex justify-between font-bold text-base align-baseline">
               <span style={{ color: '#000', fontSize: '1.1em' }}>{exp.company}</span>
               <span className="text-gray-700">{exp.duration}</span>
@@ -455,7 +468,8 @@ const ResumeBuilder = () => {
       <div>
         <h2 className="text-base font-bold uppercase border-b mb-4 pb-1" style={{ color: selectedColor, borderColor: selectedColor }}>Education</h2>
         {resumeData.education.map(edu => (
-          <div key={edu.id} className="mb-4 text-base last:mb-0">
+          <div key={edu.id} className="mb-4 text-base last:mb-0 resume-item" data-id={`edu-${edu.id}`}>
+            {spacerHeights[`edu-${edu.id}`] && <div style={{ height: `${spacerHeights[`edu-${edu.id}`]}px` }} />}
             <div className="flex justify-between font-bold">
               <span style={{ fontSize: '1.05em' }}>{edu.school}</span>
               <span className="text-gray-700">{edu.year}</span>
@@ -501,7 +515,8 @@ const ResumeBuilder = () => {
         <div>
            <h3 className="text-xl font-black uppercase tracking-widest text-slate-900 border-b-4 border-slate-300 pb-2 mb-6">Education</h3>
            {resumeData.education.map(edu => (
-             <div key={edu.id} className="mb-6 last:mb-0">
+             <div key={edu.id} className="mb-6 last:mb-0 resume-item" data-id={`edu-side-${edu.id}`}>
+               {spacerHeights[`edu-side-${edu.id}`] && <div style={{ height: `${spacerHeights[`edu-side-${edu.id}`]}px` }} />}
                <div className="font-bold text-slate-900 text-lg uppercase">{edu.year}</div>
                <div className="font-bold text-slate-700 text-base">{edu.school}</div>
                <div className="text-slate-600 text-sm mt-1 italic">{edu.degree}</div>
@@ -509,7 +524,8 @@ const ResumeBuilder = () => {
            ))}
         </div>
 
-        <div>
+        <div className="resume-item" data-id="modern-skills">
+           {spacerHeights['modern-skills'] && <div style={{ height: `${spacerHeights['modern-skills']}px` }} />}
            <h3 className="text-xl font-black uppercase tracking-widest text-slate-900 border-b-4 border-slate-300 pb-2 mb-6">Skills</h3>
            <ul className="space-y-3">
              {resumeData.skills.split(',').map((skill, i) => skill.trim() && (
@@ -544,7 +560,8 @@ const ResumeBuilder = () => {
                 <h3 className="text-2xl font-black uppercase text-slate-800 tracking-widest mb-8">Work Experience</h3>
                 <div className="border-l-4 border-slate-200 ml-3 space-y-10">
                   {resumeData.experience.map(exp => (
-                    <div key={exp.id} className="relative pl-8">
+                    <div key={exp.id} className="relative pl-8 resume-item" data-id={`exp-mod-${exp.id}`}>
+                       {spacerHeights[`exp-mod-${exp.id}`] && <div style={{ height: `${spacerHeights[`exp-mod-${exp.id}`]}px` }} />}
                        {/* Timeline Dot */}
                        <div className="absolute -left-[11px] top-1.5 w-5 h-5 bg-white border-4 border-slate-800 rounded-none transform rotate-45" style={{ borderColor: selectedColor }}></div>
                        
@@ -567,7 +584,8 @@ const ResumeBuilder = () => {
   const renderMinimal = () => (
     <div className="h-full p-[20mm] text-gray-800 font-sans border-t-8" style={{ borderColor: selectedColor }}>
        {/* Header */}
-       <div className="text-center mb-10">
+       <div className="text-center mb-10 resume-item" data-id="minimal-header">
+         {spacerHeights['minimal-header'] && <div style={{ height: `${spacerHeights['minimal-header']}px` }} />}
          <h1 className="text-5xl font-extrabold uppercase tracking-wide text-slate-900 mb-2">{resumeData.personal.fullName}</h1>
          <p className="text-2xl text-slate-600 font-light tracking-wider">{resumeData.personal.jobTitle}</p>
          
@@ -592,7 +610,8 @@ const ResumeBuilder = () => {
 
        {/* About Me */}
        {resumeData.personal.summary && (
-         <div className="mb-8">
+         <div className="mb-8 resume-item" data-id="minimal-summary">
+            {spacerHeights['minimal-summary'] && <div style={{ height: `${spacerHeights['minimal-summary']}px` }} />}
             <h3 className="text-lg font-bold uppercase tracking-widest text-slate-900 border-b-2 border-slate-300 pb-2 mb-4">About Me</h3>
             <p className="text-base text-slate-700 leading-relaxed text-justify">{resumeData.personal.summary}</p>
          </div>
@@ -602,7 +621,8 @@ const ResumeBuilder = () => {
        <div className="mb-8">
           <h3 className="text-lg font-bold uppercase tracking-widest text-slate-900 border-b-2 border-slate-300 pb-2 mb-4">Education</h3>
           {resumeData.education.map(edu => (
-            <div key={edu.id} className="mb-4">
+            <div key={edu.id} className="mb-4 resume-item" data-id={`edu-min-${edu.id}`}>
+                {spacerHeights[`edu-min-${edu.id}`] && <div style={{ height: `${spacerHeights[`edu-min-${edu.id}`]}px` }} />}
                 <div className="flex justify-between items-baseline">
                    <span className="text-base text-slate-600 font-medium">{edu.school} | {edu.year}</span>
                 </div>
@@ -616,7 +636,8 @@ const ResumeBuilder = () => {
        <div className="mb-8">
           <h3 className="text-lg font-bold uppercase tracking-widest text-slate-900 border-b-2 border-slate-300 pb-2 mb-4">Work Experience</h3>
           {resumeData.experience.map(exp => (
-             <div key={exp.id} className="mb-6 last:mb-0">
+             <div key={exp.id} className="mb-6 last:mb-0 resume-item" data-id={`exp-min-${exp.id}`}>
+                {spacerHeights[`exp-min-${exp.id}`] && <div style={{ height: `${spacerHeights[`exp-min-${exp.id}`]}px` }} />}
                 <div className="flex justify-between items-baseline mb-1">
                    <span className="text-base text-slate-600 font-medium">{exp.company} | {exp.duration}</span>
                 </div>
@@ -676,7 +697,8 @@ const ResumeBuilder = () => {
        <div className="mb-4">
           <h3 className="text-[11pt] font-bold uppercase tracking-tight border-b border-black mb-2 pb-0.5">Education</h3>
           {resumeData.education.map(edu => (
-             <div key={edu.id} className="mb-2 last:mb-0">
+             <div key={edu.id} className="mb-2 last:mb-0 resume-item" data-id={`edu-latex-${edu.id}`}>
+                {spacerHeights[`edu-latex-${edu.id}`] && <div style={{ height: `${spacerHeights[`edu-latex-${edu.id}`]}px` }} />}
                 <div className="flex justify-between font-bold text-[10pt]">
                    <span>{edu.school}</span>
                    <span>{edu.year}</span>
