@@ -68,12 +68,13 @@ const AIChatSupport = () => {
       }
     } catch (error) {
       console.error('AI Chat Error:', error);
+      const errorMessage = error.response?.data?.error || error.message || "I encountered an error. Please check your internet connection.";
       setMessages(prev => [...prev, { 
         id: Date.now() + 1, 
-        text: "I encountered an error while processing your request. Please try again or check your internet connection.", 
+        text: `🤖 **AI System Error:** ${errorMessage}`, 
         sender: 'bot' 
       }]);
-      toast.error('AI service temporarily unavailable');
+      toast.error('AI service initialization failed');
     } finally {
       setIsTyping(false);
     }

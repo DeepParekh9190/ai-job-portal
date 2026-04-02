@@ -7,7 +7,9 @@
     "start": "concurrently \"npm run server\" \"npm run client\"",
     "server": "cd server && npm run dev",
     "client": "cd client && npm run dev",
-    "install:all": "npm install && cd server && npm install && cd client && npm install",
+    "seed": "cd server && npm run seed",
+    "seed:large": "cd server && node scripts/seedData.js && node scripts/bulkImportJobs.js",
+    "install:all": "npm install && npm install --prefix server && npm install --prefix client",
     "vercel-build": "cd client && npm install && npm run build && cd ../server && npm install",
     "build": "cd client && npm run build"
   },

@@ -99,8 +99,8 @@ const callOpenAI = async (prompt, systemPrompt = '', maxTokens = 2000) => {
  * Call Google Gemini API
  */
 const callGemini = async (prompt, systemPrompt = '', maxTokens = 2000) => {
-  if (!GOOGLE_API_KEY || GOOGLE_API_KEY === 'your_google_api_key_here') {
-    throw new Error('Google API key is not configured');
+  if (!GOOGLE_API_KEY || GOOGLE_API_KEY.length < 10) {
+    throw new Error('Google API key is not configured or is too short');
   }
 
   try {
@@ -119,8 +119,8 @@ const callGemini = async (prompt, systemPrompt = '', maxTokens = 2000) => {
 
     const modelConfigs = [
       { name: 'gemini-2.5-flash', version: 'v1beta' },
-      { name: 'gemini-2.0-flash', version: 'v1beta' },
-      { name: 'gemini-flash-latest', version: 'v1beta' }
+      { name: 'gemini-2.0-flash', version: 'v1' },
+      { name: 'gemini-1.5-flash', version: 'v1' }
     ];
     
     let lastGeminiError = null;
@@ -164,8 +164,14 @@ const callGemini = async (prompt, systemPrompt = '', maxTokens = 2000) => {
     }
     throw lastGeminiError;
   } catch (error) {
-    console.error('Gemini API Error:', error.response?.data || error.message);
-    throw new Error(`Failed to call Gemini API: ${error.response?.data?.error?.message || error.message}`);
+    const apiError = error.response?.data?.error || {};
+    console.error('❌ Gemini API Critical Error:', {
+      status: error.response?.status,
+      message: apiError.message || error.message,
+      reason: apiError.status,
+      details: apiError.details
+    });
+    throw new Error(`Gemini API Error: ${apiError.message || error.message}`);
   }
 };
 
@@ -184,15 +190,15 @@ export const callAI = async (prompt, systemPrompt = '', maxTokens = 2000) => {
 
   for (const provider of providers) {
     try {
-      if (provider === 'google' && GOOGLE_API_KEY && GOOGLE_API_KEY !== 'your_google_api_key_here') {
+      if (provider === 'google' && GOOGLE_API_KEY) {
         console.log('🤖 Attempting call with Gemini...');
         return await callGemini(prompt, systemPrompt, maxTokens);
       }
-      if (provider === 'anthropic' && ANTHROPIC_API_KEY && ANTHROPIC_API_KEY !== 'your_anthropic_api_key_here') {
+      if (provider === 'anthropic' && ANTHROPIC_API_KEY) {
         console.log('🤖 Attempting call with Claude...');
         return await callClaude(prompt, systemPrompt, maxTokens);
       }
-      if (provider === 'openai' && OPENAI_API_KEY && OPENAI_API_KEY !== 'your_openai_api_key_here') {
+      if (provider === 'openai' && OPENAI_API_KEY) {
         console.log('🤖 Attempting call with OpenAI...');
         return await callOpenAI(prompt, systemPrompt, maxTokens);
       }
