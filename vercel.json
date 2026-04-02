@@ -14,15 +14,15 @@
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "server/server.js"
+      "destination": "/server/server.js"
     },
     {
       "source": "/health",
-      "destination": "server/server.js"
+      "destination": "/server/server.js"
     },
     {
       "source": "/(.*)",
-      "destination": "/index.html"
+      "destination": "/client/$1"
     }
   ]
 }
