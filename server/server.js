@@ -60,7 +60,7 @@ app.use((req, res, next) => {
 // ==================== ROUTES ====================
 
 // Health check
-app.get('/health', (req, res) => {
+app.get(['/health', '/api/health'], (req, res) => {
   const dbStatus = mongoose.connection.readyState === 1 ? 'connected' : 'disconnected';
   const dbName = mongoose.connection.name;
   
@@ -75,7 +75,7 @@ app.get('/health', (req, res) => {
 });
 
 // Root route
-app.get('/', (req, res) => {
+app.get(['/', '/api'], (req, res) => {
   res.status(200).json({
     success: true,
     message: 'Welcome to AI Job Portal API',
