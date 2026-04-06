@@ -6,26 +6,25 @@
       "use": "@vercel/node"
     },
     {
-      "src": "client/package.json",
+      "src": "package.json",
       "use": "@vercel/static-build",
-      "config": { "distDir": "dist" }
+      "config": { "distDir": "client/dist" }
     }
   ],
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "server/server.js"
+      "destination": "/server/server.js"
     },
     {
       "source": "/health",
-      "destination": "server/server.js"
+      "destination": "/server/server.js"
     },
     {
-      "source": "/assets/(.*)",
-      "destination": "/assets/$1"
+      "handle": "filesystem"
     },
     {
-      "source": "/((?!api|assets|favicon|hero-caricature|ai-resume-builder|hero|.*\\.).*)",
+      "source": "/(.*)",
       "destination": "/index.html"
     }
   ]
