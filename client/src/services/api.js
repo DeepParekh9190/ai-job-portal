@@ -61,7 +61,9 @@ api.interceptors.response.use(
 
       if (status >= 500) {
         // Server error
-        console.error('Server error:', data.message);
+        console.error('Server error:', data.message || 'Internal Server Error');
+        if (data.error) console.error('Error Details:', data.error);
+        if (data.stack) console.error('Server Stack:', data.stack);
       }
 
       return Promise.reject(error);
