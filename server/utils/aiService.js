@@ -104,9 +104,9 @@ const callGemini = async (prompt, systemPrompt = '', maxTokens = 2000) => {
   }
 
   try {
+    // Build contents array - system prompt as a user+model turn (universally supported)
     const contents = [];
 
-    // Add system instruction as a user+model turn if provided
     if (systemPrompt) {
       contents.push(
         { role: 'user', parts: [{ text: systemPrompt }] },
@@ -117,17 +117,21 @@ const callGemini = async (prompt, systemPrompt = '', maxTokens = 2000) => {
     // Add the actual user prompt
     contents.push({ role: 'user', parts: [{ text: prompt }] });
 
+    // Universal models ordered by standard availability
     const modelConfigs = [
-      { name: 'gemini-2.5-flash', version: 'v1beta' },
-      { name: 'gemini-2.0-flash', version: 'v1' },
-      { name: 'gemini-1.5-flash', version: 'v1' }
+      { name: 'gemini-1.5-flash', version: 'v1beta' },
+      { name: 'gemini-1.5-flash', version: 'v1' },
+      { name: 'gemini-1.5-pro', version: 'v1beta' },
+      { name: 'gemini-pro', version: 'v1beta' }
     ];
     
     let lastGeminiError = null;
+    const allErrors = [];
 
     for (const config of modelConfigs) {
       try {
         console.log(`🤖 Trying Gemini model: ${config.name} (${config.version})...`);
+
         const response = await axios.post(
           `https://generativelanguage.googleapis.com/${config.version}/models/${config.name}:generateContent?key=${GOOGLE_API_KEY}`,
           {
@@ -154,15 +158,17 @@ const callGemini = async (prompt, systemPrompt = '', maxTokens = 2000) => {
         lastGeminiError = gemError;
         const errMsg = gemError.response?.data?.error?.message || gemError.message;
         console.warn(`⚠️ Gemini model ${config.name} failed: ${errMsg}`);
-        
-        // Continue to next model if it's a quota or not found error
-        if (errMsg.includes('quota') || errMsg.includes('429') || errMsg.includes('not found') || errMsg.includes('404')) {
-          continue;
-        }
-        throw gemError;
+        allErrors.push(`${config.name}(${config.version}): ${errMsg}`);
+        // Always try the next model - never immediately rethrow
+        continue;
       }
     }
-    throw lastGeminiError;
+    
+    // If all failed, throw a composite error to the client
+    if (lastGeminiError) {
+      lastGeminiError.message = `All Gemini models failed. \nFallback trace:\n- ${allErrors.join('\n- ')}`;
+      throw lastGeminiError;
+    }
   } catch (error) {
     const apiError = error.response?.data?.error || {};
     console.error('❌ Gemini API Critical Error:', {

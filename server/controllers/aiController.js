@@ -576,11 +576,12 @@ Instructions:
       response: aiResponse
     });
   } catch (error) {
-    console.error('AI Chat Error:', error);
+    console.error('❌ AI Chat Critical Error:', error);
     res.status(500).json({
       success: false,
       message: 'Error generating AI response',
-      error: error.message
+      error: error.message || 'Internal AI service error',
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }
 };

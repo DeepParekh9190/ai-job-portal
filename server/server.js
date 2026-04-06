@@ -60,7 +60,7 @@ app.use((req, res, next) => {
 // ==================== ROUTES ====================
 
 // Health check
-app.get(['/health', '/api/health'], (req, res) => {
+app.get('/health', (req, res) => {
   const dbStatus = mongoose.connection.readyState === 1 ? 'connected' : 'disconnected';
   const dbName = mongoose.connection.name;
   
@@ -74,11 +74,33 @@ app.get(['/health', '/api/health'], (req, res) => {
   });
 });
 
+app.get('/api/health', (req, res) => {
+  const dbStatus = mongoose.connection.readyState === 1 ? 'connected' : 'disconnected';
+  const dbName = mongoose.connection.name;
+  
+  res.status(200).json({
+    success: true,
+    message: 'Server is running (API)',
+    dbStatus,
+    dbName,
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV
+  });
+});
+
 // Root route
-app.get(['/', '/api'], (req, res) => {
+app.get('/', (req, res) => {
   res.status(200).json({
     success: true,
     message: 'Welcome to AI Job Portal API',
+    docs: 'http://localhost:5000/api-docs'
+  });
+});
+
+app.get('/api', (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: 'Welcome to AI Job Portal API (Direct Access)',
     docs: 'http://localhost:5000/api-docs'
   });
 });
@@ -176,10 +198,11 @@ const server = app.listen(PORT, () => {
 // Configure Socket.io
 const io = new Server(server, {
   cors: {
-    origin: [
-      process.env.CLIENT_URL || 'http://localhost:5173',
-      'http://127.0.0.1:5173'
-    ],
+    origin: (origin, callback) => {
+      // Allow any origin in development to fix WebSocket handshake issues
+      callback(null, true);
+    },
+    methods: ['GET', 'POST'],
     credentials: true,
   },
 });
