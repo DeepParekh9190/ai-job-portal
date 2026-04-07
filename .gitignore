@@ -45,3 +45,5 @@ screenshots/
 # test_ai.js -> UNIGNORED
 PROJECT_REPORT*.docx
 format_docx.py
+.vercel
+.env*.local
