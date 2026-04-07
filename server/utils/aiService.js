@@ -119,9 +119,9 @@ const callGemini = async (prompt, systemPrompt = '', maxTokens = 2000) => {
 
     // Universal models ordered by standard availability
     const modelConfigs = [
-      { name: 'gemini-1.5-flash', version: 'v1beta' },
       { name: 'gemini-1.5-flash', version: 'v1' },
-      { name: 'gemini-1.5-pro', version: 'v1beta' }
+      { name: 'gemini-1.5-flash', version: 'v1beta' },
+      { name: 'gemini-1.5-pro', version: 'v1' }
     ];
     
     let lastGeminiError = null;
