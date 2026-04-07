@@ -18,7 +18,7 @@
 
   <br/>
 
-  [🌐 Live Demo](#-quick-start) · [📖 Documentation](#-project-architecture) · [🐛 Report Bug](https://github.com/DeepParekh9190/ai-job-portal/issues) · [✨ Request Feature](https://github.com/DeepParekh9190/ai-job-portal/issues)
+  [🌐 Live Demo (Vercel)](https://talentora-ai.vercel.app/) · [📖 Documentation](#-project-architecture) · [🐛 Report Bug](https://github.com/DeepParekh9190/ai-job-portal/issues) · [✨ Request Feature](https://github.com/DeepParekh9190/ai-job-portal/issues)
 
   <br/>
 
