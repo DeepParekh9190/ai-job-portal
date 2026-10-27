@@ -14,10 +14,11 @@ build/
 out/
 .vercel/
 
-# Env & Secrets (PUSHING AS IS AS PER USER REQUEST)
-# .env -> UNIGNORED
-# *.env -> UNIGNORED
-# .env.* -> UNIGNORED
+# Env & Secrets
+.env
+.env.*
+*.env
+!.env.example
 credentials.md
 
 # Logs
